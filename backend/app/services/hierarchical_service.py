@@ -144,7 +144,7 @@ class HierarchicalMemoryService:
         db.add(source)
         
         # 6. Create ExperienceRecord
-        candidate_dicts = [c.model_dump() if hasattr(c, "model_dump") else c for c in candidates]
+        candidate_dicts = [c.model_dump(mode="json") if hasattr(c, "model_dump") else c for c in candidates]
         exp_record = ExperienceRecord(
             id=uuid4(),
             memory_id=mem_id,

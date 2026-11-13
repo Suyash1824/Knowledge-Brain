@@ -5,3 +5,4 @@ Depth-aware, progressive hierarchical retrieval and Memory Capsule synthesis for
 from .engine import HierarchicalRetrievalEngine
 
 __all__ = ["HierarchicalRetrievalEngine"]
+

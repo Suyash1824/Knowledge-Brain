@@ -73,12 +73,16 @@ class RuntimeIngestionEngine:
         # -------------------------------------------------------------
         # Stage 1: Idempotency Check & Duplicate Prevention
         # -------------------------------------------------------------
-        existing_exp = db.query(ExperienceRecord).join(Memory).filter(
+        existing_mems = db.query(Memory).filter(
             Memory.conversation_id == request.conversation_id,
-            ExperienceRecord.agent_id == request.agent_id,
-            ExperienceRecord.turn_index == request.turn_index,
-            ExperienceRecord.raw_event_type == request.event_type
-        ).first()
+            Memory.hierarchy_level == 1
+        ).all()
+        
+        existing_exp = None
+        for m in existing_mems:
+            if m.metadata_ and m.metadata_.get("idempotency_key") == idempotency_key:
+                existing_exp = m.experience_record
+                break
 
         if existing_exp:
             # Idempotent match: increment evidence count, update timestamp, return existing
@@ -181,7 +185,7 @@ class RuntimeIngestionEngine:
         ))
 
         # ExperienceRecord
-        candidate_dicts = [c.model_dump() for c in candidates]
+        candidate_dicts = [c.model_dump(mode="json") for c in candidates]
         exp_record = ExperienceRecord(
             id=uuid4(),
             memory_id=exp_mem_id,
@@ -281,10 +285,15 @@ class RuntimeIngestionEngine:
         # -------------------------------------------------------------
         # Stage 7 & 8: Context Consolidation (Level 1 -> Level 2)
         # -------------------------------------------------------------
-        # Consolidate synchronously if requested; otherwise leave for background worker
-        if request.synchronous_promotion and candidates:
+        # Consolidate into working Context only if items qualify as decisions, tasks, preferences,
+        # or high-salience context (importance >= 0.70). Casual chatter remains in Level 1.
+        context_candidates = [
+            c for c in candidates
+            if c.memory_type in ["decision", "task", "preference"] or c.importance_score >= 0.70
+        ]
+        if request.synchronous_promotion and context_candidates:
             # Select top candidate for context formation
-            top_cand = max(candidates, key=lambda c: c.importance_score)
+            top_cand = max(context_candidates, key=lambda c: c.importance_score)
             ctx_domain = top_cand.memory_type if top_cand.memory_type in ["task", "decision", "preference"] else "task"
             
             ctx_mem = HierarchicalMemoryService.consolidate_experience_to_context(

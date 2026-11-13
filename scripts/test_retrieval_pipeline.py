@@ -288,3 +288,4 @@ if __name__ == "__main__":
     success = run_tests()
     if not success:
         sys.exit(1)
+
