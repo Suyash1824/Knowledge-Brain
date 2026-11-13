@@ -36,10 +36,22 @@ def get_engine():
         # DB not yet configured with real credentials
         return None
     
-    # Neon PostgreSQL requires SSL; ensure sslmode is present
-    if "sslmode" not in url and ("neon.tech" in url or "postgres" in url):
-        separator = "&" if "?" in url else "?"
-        url = f"{url}{separator}sslmode=require"
+    # Neon PostgreSQL requires SSL; local docker postgres typically does not
+    is_neon = "neon.tech" in url
+    is_ssl_required = "sslmode=require" in url or is_neon
+
+    connect_args = {
+        "connect_timeout": 15,
+        "keepalives": 1,
+        "keepalives_idle": 30,
+        "keepalives_interval": 10,
+        "keepalives_count": 5
+    }
+    if is_ssl_required:
+        connect_args["sslmode"] = "require"
+        if "sslmode" not in url:
+            separator = "&" if "?" in url else "?"
+            url = f"{url}{separator}sslmode=require"
 
     engine = create_engine(
         url,
@@ -47,14 +59,7 @@ def get_engine():
         max_overflow=10,
         pool_recycle=60,
         pool_pre_ping=True,
-        connect_args={
-            "sslmode": "require",
-            "connect_timeout": 15,
-            "keepalives": 1,
-            "keepalives_idle": 30,
-            "keepalives_interval": 10,
-            "keepalives_count": 5
-        }
+        connect_args=connect_args
     )
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     return engine

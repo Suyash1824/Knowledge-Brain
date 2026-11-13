@@ -57,6 +57,15 @@ class MemoryResponse(BaseModel):
     valid_until: Optional[datetime]
     created_at: datetime
     updated_at: datetime
+    # Progressive Hierarchical Attributes
+    hierarchy_level: int = 2
+    promotion_status: str = "none"
+    evidence_count: int = 1
+    quality_score: float = 0.7
+    promoted_at: Optional[datetime] = None
+    promoted_by: Optional[str] = None
+    parent_context_id: Optional[UUID] = None
+    superseded_by_id: Optional[UUID] = None
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
@@ -310,5 +319,114 @@ class DashboardStatsResponse(BaseModel):
     storage_engine: str
     pgvector_active: bool
     system_health: str
+
+# ==========================================
+# 12. Progressive Hierarchical Schemas
+# ==========================================
+
+HierarchyLevel = Literal[1, 2, 3] # 1: Experience, 2: Context, 3: Knowledge
+PromotionStatus = Literal["none", "candidate", "consolidated", "promoted", "superseded", "demoted", "revoked"]
+
+class ExperienceRecordResponse(BaseModel):
+    id: UUID
+    memory_id: UUID
+    raw_event_type: str
+    agent_id: Optional[str]
+    session_id: Optional[str]
+    turn_index: int
+    raw_payload: Dict[str, Any]
+    extracted_candidates: Any
+    is_consolidated: bool
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+class ContextRecordResponse(BaseModel):
+    id: UUID
+    memory_id: UUID
+    context_domain: str
+    active_status: str
+    associated_experience_count: int
+    evolution_history: Any
+    promotion_readiness: float
+    created_at: datetime
+    updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+class KnowledgeRecordResponse(BaseModel):
+    id: UUID
+    memory_id: UUID
+    knowledge_domain: str
+    verification_level: str
+    validation_source: str
+    revision_count: int
+    last_verified_at: datetime
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+class LifecycleEventResponse(BaseModel):
+    id: UUID
+    memory_id: UUID
+    transition_type: str
+    from_level: Optional[int]
+    to_level: Optional[int]
+    reason: Optional[str]
+    triggered_by: str
+    metadata: Dict[str, Any] = Field(alias="metadata_")
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+class RuntimeEventIngestRequest(BaseModel):
+    conversation_id: UUID
+    event_type: str = Field(default="conversation_turn", description="conversation_turn, tool_output, observation, user_prompt")
+    agent_id: str = Field(default="default_agent")
+    session_id: Optional[str] = None
+    turn_index: int = 0
+    raw_text: str = Field(..., description="Raw message, output or event payload to ingest")
+    context_metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    synchronous_promotion: bool = Field(default=False, description="Whether to trigger immediate context consolidation and knowledge promotion synchronously")
+
+class RuntimeEventIngestResponse(BaseModel):
+    experience_memory_id: UUID
+    content: str
+    hierarchy_level: int = 1
+    extracted_candidates_count: int
+    candidates: List[ExtractedMemoryItem]
+    is_consolidated: bool
+    context_memory_id: Optional[UUID] = None
+    promoted_knowledge_id: Optional[UUID] = None
+    lifecycle_event_id: UUID
+    message: str
+
+class MemoryPromoteRequest(BaseModel):
+    target_level: int = Field(..., ge=2, le=3, description="2 for Context, 3 for Knowledge")
+    reason: str = Field(default="Manual or policy promotion")
+    promoted_by: str = Field(default="user_or_agent")
+
+class MemoryDemoteRequest(BaseModel):
+    target_level: int = Field(..., ge=1, le=2, description="1 for Experience, 2 for Context")
+    reason: str = Field(default="Demoted due to obsolescence or decay")
+
+class HierarchicalRetrieveRequest(BaseModel):
+    query: str
+    depth: Optional[Literal["auto", "experience", "context", "knowledge", "all"]] = "auto"
+    conversation_id: Optional[UUID] = None
+    agent_id: str = "default_agent"
+    max_tokens: int = Field(default=400, ge=50, le=4000)
+    include_provenance: bool = True
+
+class HierarchicalCapsuleResponse(BaseModel):
+    capsule_id: UUID
+    query: str
+    determined_depth: str
+    total_tokens: int
+    token_budget: int
+    budget_exhausted: bool
+    experience_items_count: int
+    context_items_count: int
+    knowledge_items_count: int
+    capsule_data_wrapped: str
+    entries: List[CapsuleMemoryEntry]
+    explanation: Dict[str, Any]
+    generated_at: datetime
 
 
