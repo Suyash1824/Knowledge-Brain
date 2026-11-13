@@ -913,7 +913,19 @@ async def request_deletion(request: DeletionRequestCreate, db: Session = Depends
     Executes a dependency-aware deletion request. Traces parent/child graph dependencies,
     removes derived memories, zeroes vector embeddings, and generates a multi-store SHA-256 receipt.
     """
-    requester = request.requested_by or uuid4()
+    requester = request.requested_by
+    if requester:
+        user_exists = db.query(User).filter(User.id == requester).first()
+        if not user_exists:
+            requester = None
+    if not requester:
+        user = db.query(User).first()
+        if not user:
+            user = User(id=uuid4(), email="admin@knowledgebrain.ai", hashed_password="placeholder_hash")
+            db.add(user)
+            db.commit()
+        requester = user.id
+
     result = ForgettingEngine.execute_deletion(
         target_memory_id=request.memory_id,
         requested_by=requester,
