@@ -62,8 +62,13 @@ def run_migrations():
             conn.commit()
             print("  ✓ 'vector' extension enabled successfully.")
             
-            # 2. Non-destructive Alter Table for Progressive Hierarchical Columns on memories
-            print("\nStep 2: Checking and upgrading 'memories' table columns for Progressive Hierarchy...")
+            # 2. Deploy All 14 ORM Tables via Base.metadata
+            print("\nStep 2: Provisioning 14 ORM tables via SQLAlchemy metadata...")
+            Base.metadata.create_all(bind=engine)
+            print("  ✓ Table metadata deployment completed.")
+
+            # 3. Non-destructive Alter Table for Progressive Hierarchical Columns on memories
+            print("\nStep 3: Checking and upgrading 'memories' table columns for Progressive Hierarchy...")
             alter_stmts = [
                 "ALTER TABLE memories ADD COLUMN IF NOT EXISTS hierarchy_level INTEGER NOT NULL DEFAULT 2;",
                 "ALTER TABLE memories ADD COLUMN IF NOT EXISTS promotion_status VARCHAR(32) NOT NULL DEFAULT 'none';",
@@ -78,11 +83,6 @@ def run_migrations():
                 conn.execute(text(stmt))
             conn.commit()
             print("  ✓ Progressive hierarchy columns verified/added on 'memories'.")
-
-            # 3. Deploy All 14 ORM Tables via Base.metadata
-            print("\nStep 3: Provisioning 14 ORM tables via SQLAlchemy metadata...")
-            Base.metadata.create_all(bind=engine)
-            print("  ✓ Table metadata deployment completed.")
             
             # 4. Create HNSW Cosine Index for pgvector
             print("\nStep 4: Creating HNSW index on memories.embedding (m=16, ef_construction=64)...")

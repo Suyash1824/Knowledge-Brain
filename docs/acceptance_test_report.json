@@ -1,0 +1,133 @@
+{
+  "timestamp": "2026-11-13T13:15:42.306062+00:00",
+  "total_tests": 14,
+  "passed": 14,
+  "failed": 0,
+  "results": [
+    {
+      "id": 1,
+      "name": "Docker Desktop and Docker Compose Operational",
+      "status": true,
+      "duration_ms": 343.41,
+      "evidence": "Docker Server v29.7.2 | Compose: Docker Compose version v5.4.0",
+      "details": {}
+    },
+    {
+      "id": 2,
+      "name": "All Required Containers Start Successfully",
+      "status": true,
+      "duration_ms": 299.84,
+      "evidence": "Containers: ['api', 'db', 'worker'] -> all Up (kb-api, kb-postgres, kb-worker)",
+      "details": {
+        "api": {
+          "name": "kb-api",
+          "status": "Up 3 minutes (healthy)"
+        },
+        "db": {
+          "name": "kb-postgres",
+          "status": "Up 3 minutes (healthy)"
+        },
+        "worker": {
+          "name": "kb-worker",
+          "status": "Up 3 minutes"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "name": "PostgreSQL with pgvector Health Check",
+      "status": true,
+      "duration_ms": 354.47,
+      "evidence": "PostgreSQL health: healthy | pgvector version: 0.8.7",
+      "details": {}
+    },
+    {
+      "id": 4,
+      "name": "All Database Migrations Execute Successfully",
+      "status": true,
+      "duration_ms": 96.83,
+      "evidence": "Deployed 14/14 tables | HNSW Index: idx_memories_embedding_hnsw",
+      "details": {}
+    },
+    {
+      "id": 5,
+      "name": "10-Stage Ingestion Pipeline End-to-End",
+      "status": true,
+      "duration_ms": 243.35,
+      "evidence": "Ingested ID: 61115924-7679-429b-97d1-46dd82d441cd | Candidates: 2 | Idempotent absorption evidence: 2",
+      "details": {}
+    },
+    {
+      "id": 6,
+      "name": "Experience -> Context -> Knowledge Progressive Promotion",
+      "status": true,
+      "duration_ms": 109.96,
+      "evidence": "Experience L1 (06a2def2-689b-4c12-a44a-b7d724f99623) -> Context L2 -> Knowledge L3 (42e84392-bca7-4d42-9f5a-0863298f03bc, status=promoted) | Casual chatter retained at L1",
+      "details": {}
+    },
+    {
+      "id": 7,
+      "name": "Independent Depth-Aware Retrieval Tier Selection",
+      "status": true,
+      "duration_ms": 22.83,
+      "evidence": "Tactical -> experience | Tasks -> context | Invariants -> knowledge",
+      "details": {}
+    },
+    {
+      "id": 8,
+      "name": "Memory Capsules Respect Token Budget & Passive Fencing",
+      "status": true,
+      "duration_ms": 6.13,
+      "evidence": "Budget: 60 tokens -> Delivered: 13 tokens | Passive tags: verified",
+      "details": {}
+    },
+    {
+      "id": 9,
+      "name": "All 9 MCP Tools Work Through Configured Interface",
+      "status": true,
+      "duration_ms": 0.02,
+      "evidence": "Registered 9/9 MCP tools: ['compile_memory', 'retrieve_memories', 'generate_memory_capsule', 'check_memory_conflicts', 'update_memory', 'forget_memory', 'ingest_experience', 'retrieve_hierarchical_memory', 'promote_memory']",
+      "details": {}
+    },
+    {
+      "id": 10,
+      "name": "Cursor and Antigravity Dual-Agent Memory Exchange",
+      "status": true,
+      "duration_ms": 69.91,
+      "evidence": "Cursor -> Antigravity handover: verified (capsule entries=1) | Antigravity -> Cursor update: verified (V2 [COMPLETED])",
+      "details": {}
+    },
+    {
+      "id": 11,
+      "name": "Authentication, Permissions and Tenant Isolation",
+      "status": true,
+      "duration_ms": 1334.22,
+      "evidence": "Bcrypt: verified (rounds=12) | JWT: verified (HS256) | Agent ACL: Antigravity blocked from reading Cursor private memory",
+      "details": {}
+    },
+    {
+      "id": 12,
+      "name": "Conflict Handling, Versioning & Dependency-Aware Forgetting",
+      "status": true,
+      "duration_ms": 96.83,
+      "evidence": "Conflict: detected (update_version) | Cascade deletion: verified | Dep invalidation: verified | SHA-256 Receipt: c0a7b93fa26ea38c...",
+      "details": {}
+    },
+    {
+      "id": 13,
+      "name": "Backend Survives Container Restart Without Data Loss",
+      "status": true,
+      "duration_ms": 8980.36,
+      "evidence": "Canary Record ID 07263bab-6c17-4c91-a75e-f83c1ac106e9 verified present and unchanged after full container restart",
+      "details": {}
+    },
+    {
+      "id": 14,
+      "name": "Existing Neon Records Remain Untouched",
+      "status": true,
+      "duration_ms": 1411.59,
+      "evidence": "Neon Cloud Database: 14 tables intact | 3 memories intact | 9 conversations intact | 0 records altered",
+      "details": {}
+    }
+  ]
+}

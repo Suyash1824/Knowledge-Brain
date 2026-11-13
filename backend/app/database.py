@@ -35,6 +35,10 @@ def get_engine():
     if not url or "your-neon-host" in url or "<neon-host>" in url or "<password>" in url:
         # DB not yet configured with real credentials
         return None
+
+    # Ensure SQLAlchemy uses psycopg2 driver if standard postgresql:// schema is passed
+    if url.startswith("postgresql://") and not url.startswith("postgresql+"):
+        url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
     
     # Neon PostgreSQL requires SSL; local docker postgres typically does not
     is_neon = "neon.tech" in url

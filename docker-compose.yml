@@ -35,7 +35,7 @@ services:
     ports:
       - "${API_PORT:-8000}:8000"
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@db:5432/knowledge_brain}
+      DATABASE_URL: ${DOCKER_DATABASE_URL:-postgresql://postgres:postgres@db:5432/knowledge_brain}
       SECRET_KEY: ${SECRET_KEY:-kb_prod_secret_key_change_in_production_998877}
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
@@ -44,7 +44,7 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/health || exit 1"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -62,7 +62,7 @@ services:
     restart: unless-stopped
     command: ["python", "-m", "app.ingestion.worker"]
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@db:5432/knowledge_brain}
+      DATABASE_URL: ${DOCKER_DATABASE_URL:-postgresql://postgres:postgres@db:5432/knowledge_brain}
       PYTHONPATH: /app
     depends_on:
       db:

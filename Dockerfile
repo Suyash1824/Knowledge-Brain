@@ -1,6 +1,6 @@
 # Knowledge Brain — Production Container Dockerfile
 # Builds unified container image for FastAPI API server and Background Ingestion Worker
-FROM python:3.12-slim
+FROM python:3.12-slim-bookworm
 
 # Prevent Python from writing bytecode and buffer stdout/stderr
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -8,13 +8,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app
 
 WORKDIR /app
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    libpq-dev \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
 COPY backend/requirements.txt /app/requirements.txt

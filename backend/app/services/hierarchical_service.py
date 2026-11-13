@@ -231,6 +231,7 @@ class HierarchicalMemoryService:
             updated_at=now
         )
         db.add(ctx_mem)
+        db.flush()
         
         # Link Experience memory to parent Context memory
         exp_mem.parent_context_id = ctx_id
