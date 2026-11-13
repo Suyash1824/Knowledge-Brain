@@ -29,6 +29,10 @@ Comprehensive technical specifications and system designs are available in the [
   - Multi-store dependency-aware forgetting & cryptographic audit boundaries
   - Ingress security, trust classification & pre-retrieval ACL
   - pgvector configuration & zero-downtime embedding migration plan
+- [Model Context Protocol (MCP) Server Architecture](docs/mcp_architecture.md)
+  - Stdio JSON-RPC 2.0 communication engine
+  - 6 Core MCP tools specifications (`compile_memory`, `retrieve_memories`, `generate_memory_capsule`, `check_memory_conflicts`, `update_memory`, `forget_memory`)
+  - Cursor AI and Google Antigravity integration configurations
 - [Current Development Status](DEVELOPMENT_STATUS.md)
 
 ---
@@ -85,13 +89,27 @@ Comprehensive technical specifications and system designs are available in the [
 
 ### Verification & Automated Testing
 
-Knowledge Brain includes automated verification suites for both architecture validation and core intelligence capabilities:
+Knowledge Brain includes automated verification suites for architecture validation, core intelligence capabilities, and live MCP tools:
 ```powershell
 # Run Phase 1 Foundation & Schema Verification
 .\venv\Scripts\python.exe scripts/verify_phase1.py
 
 # Run Phase 2 Core Intelligence Engine Verification (10/10 Objectives)
 .\venv\Scripts\python.exe scripts/test_phase2_suite.py
+
+# Run Live Database Verification (Neon PostgreSQL + pgvector)
+.\venv\Scripts\python.exe scripts/verify_live_database.py
+
+# Run Standalone MCP Server Automated Test Suite (6/6 Tools Live)
+.\venv\Scripts\python.exe scripts/test_mcp_server.py
+```
+
+### Standalone MCP Server Execution (Cursor AI & Antigravity AI)
+
+To start the standalone MCP server over stdio:
+```powershell
+$env:PYTHONPATH = "backend"
+.\venv\Scripts\python.exe backend/mcp_server.py
 ```
 
 ### Frontend Setup & Execution
@@ -110,21 +128,23 @@ Knowledge Brain includes automated verification suites for both architecture val
 
 ```
 Knowledge-Brain/
-├── backend/                  # Python FastAPI Backend
+├── backend/                  # Python Backend & Engine
 │   ├── app/                  # Consolidated authoritative application package
 │   │   ├── compiler/         # Extraction & sanitization modules
 │   │   ├── conflict/         # Contradiction & conflict detection engine
 │   │   ├── forgetting/       # Dependency-aware cascade forgetting engine
 │   │   ├── capsule/          # Memory capsule token budget generator
 │   │   ├── services/         # Orchestration & persistence service layer
-│   │   ├── api.py            # REST and MCP gateway routes
+│   │   ├── api.py            # REST API routes
 │   │   ├── database.py       # SQLAlchemy engine & 503 fallback guard
 │   │   ├── main.py           # Application entry point & middleware
 │   │   ├── models.py         # 10-table ORM schemas & graph associations
 │   │   └── schemas.py        # Pydantic v2 validation contracts
+│   ├── mcp_server.py         # Standalone Model Context Protocol (MCP) server
 │   └── requirements.txt      # Python dependencies
 ├── docs/                     # Comprehensive Architecture Specifications
-│   └── architecture.md       # Full architecture specification & Mermaid diagrams
+│   ├── architecture.md       # Full architecture specification & Mermaid diagrams
+│   └── mcp_architecture.md   # MCP server specification & tool schemas
 ├── frontend/                 # React + Tailwind CSS client
 │   ├── src/
 │   │   └── main.tsx
@@ -132,8 +152,11 @@ Knowledge-Brain/
 │   ├── tailwind.config.js
 │   └── vite.config.ts
 ├── scripts/                  # Automation & verification scripts
+│   ├── migrate_database.py   # Live Neon database migration & HNSW runner
 │   ├── scan_secrets.py       # Secret scanning & pre-commit audit
+│   ├── test_mcp_server.py    # Automated MCP Server test suite (6/6 tools)
 │   ├── test_phase2_suite.py  # Phase 2 Core Intelligence test suite (10/10)
+│   ├── verify_live_database.py # Live PostgreSQL & pgvector verifier
 │   └── verify_phase1.py      # Automated Phase 1 test suite
 ├── .env.example              # Environment variable template
 ├── .gitignore                # Git ignore rules (secrets, venv, node_modules)
