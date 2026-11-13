@@ -114,6 +114,7 @@ async def compile_memory(
     conversation_id: Optional[str] = None,
     source_type: str = "conversation_turn",
     agent_id: Optional[str] = None,
+    classification_level: str = "standard",
     persist: bool = True
 ) -> str:
     effective_agent = agent_id or os.getenv("KB_AGENT_ID", "default_agent")
@@ -141,6 +142,7 @@ async def compile_memory(
             _, conv_uuid = resolve_default_user_and_conv(db, effective_agent)
             
         for item in extracted_items:
+            item.metadata["classification_level"] = classification_level
             mem_dict = {
                 "content": MemorySanitizer.wrap_passive_data(item.content),
                 "memory_type": item.memory_type,
@@ -213,6 +215,23 @@ async def retrieve_memories(
             query = query.filter(Memory.memory_type == memory_type)
             
         db_memories = query.order_by(Memory.created_at.desc()).limit(min(limit, 100)).all()
+        
+        # Enforce agent read clearance
+        all_mem_ids = [m.id for m in db_memories]
+        if all_mem_ids:
+            mem_with_perms = {
+                row[0] for row in db.query(MemoryPermission.memory_id).filter(
+                    MemoryPermission.memory_id.in_(all_mem_ids)
+                ).all()
+            }
+            allowed_ids = {
+                row[0] for row in db.query(MemoryPermission.memory_id).filter(
+                    MemoryPermission.memory_id.in_(all_mem_ids),
+                    MemoryPermission.agent_id.in_([effective_agent, "*", "default_agent"]),
+                    MemoryPermission.can_read == True
+                ).all()
+            }
+            db_memories = [m for m in db_memories if m.id not in mem_with_perms or m.id in allowed_ids]
         
         output = []
         for m in db_memories:
@@ -351,6 +370,21 @@ async def update_memory(
         if not mem:
             return json.dumps({"error": "NotFound", "message": f"Memory {memory_id} not found."})
             
+        # Enforce agent write clearance
+        perms = db.query(MemoryPermission).filter(
+            MemoryPermission.memory_id == mem_uuid
+        ).all()
+        if perms:
+            can_write = any(
+                p.can_write for p in perms
+                if p.agent_id in [effective_agent, "*"]
+            )
+            if not can_write:
+                return json.dumps({
+                    "error": "PermissionDenied",
+                    "message": f"Agent '{effective_agent}' does not have write permission for memory '{memory_id}'."
+                })
+
         now = datetime.now(timezone.utc)
         sanitized_content, sec_status, audit = MemorySanitizer.inspect_and_sanitize(
             raw_text=new_content,
@@ -373,14 +407,19 @@ async def update_memory(
         mem.content = sanitized_content
         mem.updated_at = now
         
-        # Record semantic link
-        sem_stmt = memory_semantic_links.insert().values(
-            source_id=mem.id,
-            target_id=mem.id,
-            type="updates",
-            created_at=now
-        )
-        db.execute(sem_stmt)
+        # Record semantic link if not already recorded
+        link_exists = db.query(memory_semantic_links).filter(
+            memory_semantic_links.c.source_id == mem.id,
+            memory_semantic_links.c.target_id == mem.id
+        ).first()
+        if not link_exists:
+            sem_stmt = memory_semantic_links.insert().values(
+                source_id=mem.id,
+                target_id=mem.id,
+                type="updates",
+                created_at=now
+            )
+            db.execute(sem_stmt)
         db.commit()
         db.refresh(mem)
         
@@ -469,3 +508,4 @@ def run_server():
 
 if __name__ == "__main__":
     run_server()
+

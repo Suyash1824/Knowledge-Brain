@@ -102,11 +102,23 @@ Knowledge Brain includes automated verification suites for architecture validati
 
 # Run Standalone MCP Server Automated Test Suite (6/6 Tools Live)
 .\venv\Scripts\python.exe scripts/test_mcp_server.py
+
+# Run Dual-Agent Continuity Verification (Cursor AI + Google Antigravity AI)
+.\venv\Scripts\python.exe scripts/verify_dual_agent_continuity.py
 ```
 
-### Standalone MCP Server Execution (Cursor AI & Antigravity AI)
+### Dual-Agent Client Integration (Cursor AI & Google Antigravity)
 
-To start the standalone MCP server over stdio:
+Knowledge Brain is natively configured to serve both **Cursor AI** and **Google Antigravity AI** as independent MCP clients connected to the same persistent backend:
+
+- **Cursor AI Configuration:** `.cursor/mcp.json`
+- **Google Antigravity Configuration:** `.agents/mcp_config.json` and root `mcp_config.json`
+
+Both clients communicate over standard I/O (stdio JSON-RPC 2.0) with automatic memory compilation, passive data fencing (`<memory_data is_instruction="false">`), and task-focused Memory Capsule generation. See [`docs/mcp_architecture.md`](docs/mcp_architecture.md) for sequence diagrams and security policies.
+
+### Standalone MCP Server Execution
+
+To start the standalone MCP server over stdio manually:
 ```powershell
 $env:PYTHONPATH = "backend"
 .\venv\Scripts\python.exe backend/mcp_server.py

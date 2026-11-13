@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "knowledge-brain": {
+      "command": "d:\\5B assignments\\CV\\DevX\\venv\\Scripts\\python.exe",
+      "args": [
+        "d:\\5B assignments\\CV\\DevX\\backend\\mcp_server.py"
+      ],
+      "env": {
+        "PYTHONPATH": "d:\\5B assignments\\CV\\DevX\\backend",
+        "KB_AGENT_ID": "cursor-ai"
+      }
+    }
+  }
+}

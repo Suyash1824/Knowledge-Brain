@@ -77,14 +77,19 @@ class MemoryService:
                     conflicting_mem.importance_score = max(conflicting_mem.importance_score or 0.7, importance)
                     conflicting_mem.updated_at = now
                     
-                    # Record semantic update link
-                    rel_stmt = memory_semantic_links.insert().values(
-                        source_id=conflicting_mem.id,
-                        target_id=mem_id,
-                        type="updates",
-                        created_at=now
-                    )
-                    db.execute(rel_stmt)
+                    # Record semantic update link if not already present
+                    link_exists = db.query(memory_semantic_links).filter(
+                        memory_semantic_links.c.source_id == conflicting_mem.id,
+                        memory_semantic_links.c.target_id == conflicting_mem.id
+                    ).first()
+                    if not link_exists:
+                        rel_stmt = memory_semantic_links.insert().values(
+                            source_id=conflicting_mem.id,
+                            target_id=conflicting_mem.id,
+                            type="updates",
+                            created_at=now
+                        )
+                        db.execute(rel_stmt)
                     db.commit()
                     db.refresh(conflicting_mem)
                     
@@ -149,16 +154,28 @@ class MemoryService:
             )
             db.add(source)
             
-            # Persist Agent Access Control
-            perm = MemoryPermission(
+            # Persist Agent Access Control (Collaborative read/write for standard; author-only for restricted)
+            classification = metadata.get("classification_level", "standard")
+            perm_author = MemoryPermission(
                 id=uuid4(),
                 memory_id=mem_id,
                 agent_id=agent_id,
                 can_read=True,
                 can_write=True,
-                classification_level="standard"
+                classification_level=classification
             )
-            db.add(perm)
+            db.add(perm_author)
+
+            if classification == "standard":
+                perm_shared = MemoryPermission(
+                    id=uuid4(),
+                    memory_id=mem_id,
+                    agent_id="*",
+                    can_read=True,
+                    can_write=True,
+                    classification_level="standard"
+                )
+                db.add(perm_shared)
             
             # If conflicting, record semantic contradiction link
             if conflict_report and conflicting_mem:

@@ -61,10 +61,12 @@ class ConflictDetector:
                 recommended_action="none"
             )
 
-        # 2. Extract shared keywords (filter common stopwords)
+        # 2. Extract shared keywords (filter common stopwords & grammatical markers)
         stopwords = {
             "this", "that", "with", "from", "have", "been", "were", "what",
-            "when", "where", "user", "project", "system", "please", "should", "will"
+            "when", "where", "user", "project", "system", "please", "should", "will",
+            "decided", "chose", "chosen", "selected", "prefer", "preference",
+            "choice", "adopt", "using", "implement", "implemented", "configure"
         }
         e_words = set(w for w in re.findall(r"\b\w{4,}\b", e_lower) if w not in stopwords)
         n_words = set(w for w in re.findall(r"\b\w{4,}\b", n_lower) if w not in stopwords)

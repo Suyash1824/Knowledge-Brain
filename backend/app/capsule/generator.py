@@ -73,8 +73,14 @@ class MemoryCapsuleGenerator:
             
             # 2. Agent Access Control Whitelisting: Verify agent clearance if permissions exist
             allowed_memory_ids = set()
+            mem_with_perms = set()
             all_mem_ids = [m.id for m in db_memories]
             if all_mem_ids:
+                mem_with_perms = {
+                    row[0] for row in db.query(MemoryPermission.memory_id).filter(
+                        MemoryPermission.memory_id.in_(all_mem_ids)
+                    ).all()
+                }
                 perms = db.query(MemoryPermission).filter(
                     MemoryPermission.memory_id.in_(all_mem_ids),
                     MemoryPermission.agent_id.in_([request.agent_id, "*", "default_agent"]),
@@ -85,8 +91,8 @@ class MemoryCapsuleGenerator:
             task_words = set(re_word for re_word in request.task_description.lower().split() if len(re_word) > 2)
             
             for m in db_memories:
-                # Discard if agent is not authorized (when permissions are defined on the memory)
-                if allowed_memory_ids and m.id not in allowed_memory_ids:
+                # Discard if memory has explicit permissions and agent is not authorized
+                if m.id in mem_with_perms and m.id not in allowed_memory_ids:
                     continue
                 
                 # Check temporal expiration: filter out stale/expired memories

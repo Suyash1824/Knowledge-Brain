@@ -12,23 +12,20 @@ from ..schemas import ExtractedMemoryItem, MemoryType
 # Heuristic patterns for rule-based zero-dependency extraction across 5 facets
 PATTERNS = {
     "preference": [
-        r"(?i)\b(?:i\s+prefer|i\s+like|i\s+dislike|i\s+hate|i\s+want|never\s+use|always\s+use|my\s+favorite|please\s+ensure)\b.*?[.!?\n]",
-        r"(?i)\b(?:preference\s+is|format\s+as|style\s+should\s+be|rather\s+than|opt\s+for)\b.*?[.!?\n]"
+        r"(?i)(?:\b(?:i\s+prefer|i\s+like|i\s+dislike|i\s+hate|i\s+want|never\s+use|always\s+use|my\s+favorite|please\s+ensure)\b|\b(?:preference|style)\s*:|\b(?:preference\s+is|format\s+as|style\s+should\s+be|rather\s+than|opt\s+for)\b).*?[.!?\n]",
     ],
     "decision": [
-        r"(?i)\b(?:decided\s+to|we\s+chose|i\s+have\s+decided|agreed\s+on|approved\s+to|selected\s+option|settled\s+on)\b.*?[.!?\n]",
-        r"(?i)\b(?:decision\s*:\s*|architecture\s+decision\s*:\s*|chosen\s+approach\s+is|final\s+verdict)\b.*?[.!?\n]"
+        r"(?i)(?:\b(?:decided\s+to|we\s+chose|i\s+have\s+decided|agreed\s+on|approved\s+to|selected\s+option|settled\s+on)\b|\b(?:decision|architecture\s+decision)\s*:|\b(?:chosen\s+approach\s+is|final\s+verdict)\b).*?[.!?\n]",
     ],
     "task": [
-        r"(?i)\b(?:todo\s*:|task\s*:|need\s+to|must\s+implement|have\s+to|action\s+item\s*:|remember\s+to|plan\s+to)\b.*?[.!?\n]",
-        r"(?i)\b(?:next\s+step\s+is|upcoming\s+milestone|deadline\s+is|assigned\s+to)\b.*?[.!?\n]"
+        r"(?i)(?:\b(?:todo|task|action\s+item)\s*:|\b(?:need\s+to|must\s+implement|have\s+to|remember\s+to|plan\s+to|completed\s+auth|remaining\s+step\s+is|next\s+step\s+is|upcoming\s+milestone|deadline\s+is|assigned\s+to)\b).*?[.!?\n]",
     ],
     "experience": [
         r"(?i)\b(?:learned\s+that|discovered\s+that|the\s+issue\s+was|the\s+bug\s+was\s+caused\s+by|solution\s+was|lesson\s+learned)\b.*?[.!?\n]",
         r"(?i)\b(?:encountered\s+error|fixed\s+by|root\s+cause\s+was|turns\s+out\s+that)\b.*?[.!?\n]"
     ],
     "fact": [
-        r"(?i)\b(?:is\s+located\s+in|uses\s+version|configured\s+with|system\s+runs\s+on|built\s+with|database\s+is)\b.*?[.!?\n]",
+        r"(?i)(?:\b(?:fact|metric|architecture\s+fact)\s*:|\b(?:is\s+located\s+in|uses\s+version|configured\s+with|system\s+runs\s+on|built\s+with|database\s+is)\b).*?[.!?\n]",
         r"(?i)\b(?:my\s+name\s+is|i\s+am\s+a|the\s+project\s+(?:repository\s+)?is|project\s+is|repo\s+is|license\s+is|platform\s+is)\b.*?[.!?\n]"
     ]
 }
