@@ -6,6 +6,7 @@ export const SettingsTab: React.FC = () => {
   const [tokenInput, setTokenInput] = useState(api.getToken() || '');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [authStatus, setAuthStatus] = useState<string | null>(null);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
@@ -21,14 +22,20 @@ export const SettingsTab: React.FC = () => {
     setTimeout(() => setSavedSuccess(false), 2000);
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
 
     try {
-      const res = await api.login(email, password);
-      setTokenInput(res.access_token);
-      setAuthStatus(`Authenticated as ${res.user.email} (Role: ${res.user.role})`);
+      if (isRegisterMode) {
+        const user = await api.register(email, password);
+        setAuthStatus(`Registered and authenticated as ${user.email}`);
+        setTokenInput(api.getToken() || '');
+      } else {
+        const res = await api.login(email, password);
+        setTokenInput(res.access_token);
+        setAuthStatus(`Authenticated as ${res.user.email} (Role: ${res.user.role})`);
+      }
     } catch (err: any) {
       setAuthStatus(`Auth error: ${err.message}`);
     }
@@ -54,11 +61,20 @@ export const SettingsTab: React.FC = () => {
 
       {/* Section 1: Authentication */}
       <div className="p-6 rounded-2xl glass-card border border-white/10 space-y-5">
-        <div className="flex items-center gap-2 pb-3 border-b border-white/[0.08]">
-          <Key className="w-4 h-4 text-crimson-400" />
-          <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
-            RFC 7519 JWT Bearer Authentication
-          </h3>
+        <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+          <div className="flex items-center gap-2">
+            <Key className="w-4 h-4 text-crimson-400" />
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
+              RFC 7519 JWT Bearer Authentication
+            </h3>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsRegisterMode(!isRegisterMode)}
+            className="text-xs font-mono text-crimson-400 hover:text-crimson-300 underline"
+          >
+            {isRegisterMode ? 'Switch to Login' : 'Register New Account'}
+          </button>
         </div>
 
         {authStatus && (
@@ -67,26 +83,28 @@ export const SettingsTab: React.FC = () => {
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <form onSubmit={handleAuthSubmit} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="user@example.com"
             className="p-2.5 rounded-xl bg-black/60 border border-white/15 text-xs text-white focus:outline-none focus:border-crimson-500 font-mono"
+            required
           />
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password (bcrypt 12)"
+            placeholder={isRegisterMode ? "Password (min 8 chars)" : "Password (bcrypt 12)"}
             className="p-2.5 rounded-xl bg-black/60 border border-white/15 text-xs text-white focus:outline-none focus:border-crimson-500 font-mono"
+            required
           />
           <button
             type="submit"
             className="px-4 py-2.5 rounded-xl text-xs font-semibold text-white bg-crimson-600 hover:bg-crimson-500 transition-all cursor-pointer"
           >
-            Authenticate / Login
+            {isRegisterMode ? 'Register Account' : 'Authenticate / Login'}
           </button>
         </form>
 

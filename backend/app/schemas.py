@@ -18,7 +18,7 @@ RelationshipType = Literal["depends_on", "contradicts", "updates", "derives_from
 
 class MemoryCompileInput(BaseModel):
     """Input payload to Memory Compiler from conversation turns or agent output."""
-    conversation_id: UUID
+    conversation_id: Optional[UUID] = None
     agent_id: Optional[str] = Field(default="user", description="Identifier of the origin agent or user")
     source_type: str = Field(default="conversation_turn", description="Origin: conversation_turn, api, tool, user")
     raw_content: str = Field(..., description="Raw text or conversation stream to extract memories from")
@@ -36,7 +36,7 @@ class ExtractedMemoryItem(BaseModel):
     relationship_type: Optional[RelationshipType] = None
 
 class MemoryCreate(BaseModel):
-    conversation_id: UUID
+    conversation_id: Optional[UUID] = None
     content: str
     memory_type: MemoryType = "fact"
     importance_score: Optional[float] = Field(default=0.7, ge=0.0, le=1.0)
@@ -93,6 +93,12 @@ class MemorySourceResponse(BaseModel):
 # 2. Conflict Detection Schemas
 # ==========================================
 
+class ConflictCheckRequest(BaseModel):
+    new_content: Optional[str] = None
+    reference_content: Optional[str] = None
+    memory_id: Optional[UUID] = None
+    cognitive_facet: Optional[str] = None
+
 class ConflictReport(BaseModel):
     """Contradiction or conflict detected between existing memories and new information."""
     has_conflict: bool
@@ -142,7 +148,7 @@ class MemoryCapsuleResponse(BaseModel):
 
 class DeletionRequestCreate(BaseModel):
     memory_id: UUID
-    requested_by: UUID
+    requested_by: Optional[UUID] = None
     reason: Optional[str] = "User requested right-to-be-forgotten"
 
 class DeletionVerificationResponse(BaseModel):

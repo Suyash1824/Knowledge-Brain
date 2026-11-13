@@ -118,10 +118,10 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigateTab, onSelec
             </div>
           </div>
           <div className="text-2xl font-bold font-mono text-white mb-1">
-            {stats?.total_memories || 142}
+            {stats !== null ? stats.total_memories : (loading ? '...' : 0)}
           </div>
           <div className="text-[11px] text-emerald-400 flex items-center gap-1">
-            <span>+12 new today</span>
+            <span>Neon DB synced</span>
             <span className="text-text-muted">• 1,536-dim vectors</span>
           </div>
         </div>
@@ -135,7 +135,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigateTab, onSelec
             </div>
           </div>
           <div className="text-2xl font-bold font-mono text-white mb-1">
-            {stats?.total_agents || 2}
+            {stats !== null ? stats.total_agents : 2}
           </div>
           <div className="text-[11px] text-technical flex items-center gap-1">
             <span>Cursor AI + Antigravity</span>
@@ -232,7 +232,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigateTab, onSelec
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 </div>
                 <div className="text-[10px] text-text-secondary font-mono flex items-center justify-between">
-                  <span>138 memories accessible</span>
+                  <span>{stats ? stats.total_memories : 0} memories accessible</span>
                   <span className="text-emerald-400">Read / Write</span>
                 </div>
               </div>
@@ -249,7 +249,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigateTab, onSelec
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 </div>
                 <div className="text-[10px] text-text-secondary font-mono flex items-center justify-between">
-                  <span>135 memories accessible</span>
+                  <span>{stats ? stats.total_memories : 0} memories accessible</span>
                   <span className="text-emerald-400">Read / Write</span>
                 </div>
               </div>
@@ -279,6 +279,11 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigateTab, onSelec
         </div>
 
         <div className="space-y-2.5">
+          {recentMemories.length === 0 && !loading && (
+            <div className="py-8 text-center text-xs font-mono text-text-muted border border-dashed border-white/10 rounded-xl">
+              No memories recorded in this workspace yet. Click "Compile New Dialogue" or "Add Memory" to create one.
+            </div>
+          )}
           {recentMemories.map((m) => (
             <div
               key={m.id}

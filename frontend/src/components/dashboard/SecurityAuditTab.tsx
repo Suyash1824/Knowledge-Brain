@@ -1,13 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
-import { ForgettingReceipt } from '../../types';
+import { ForgettingReceipt, Memory } from '../../types';
 import { ShieldCheck, Trash2, Key, Check, RefreshCw, Hash, Lock, Database } from 'lucide-react';
 
 export const SecurityAuditTab: React.FC = () => {
-  const [memoryId, setMemoryId] = useState('mem-jwt-auth');
+  const [memoryId, setMemoryId] = useState('');
+  const [availableMemories, setAvailableMemories] = useState<Memory[]>([]);
   const [reason, setReason] = useState('User Right-to-be-Forgotten GDPR / compliance audit');
   const [isDeleting, setIsDeleting] = useState(false);
   const [receipt, setReceipt] = useState<ForgettingReceipt | null>(null);
+
+  useEffect(() => {
+    api.getMemories({ limit: 10 }).then((mems) => {
+      setAvailableMemories(mems);
+      if (mems.length > 0) {
+        setMemoryId(mems[0].id);
+      }
+    }).catch(console.error);
+  }, []);
 
   const handleForgetting = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,15 +71,31 @@ export const SecurityAuditTab: React.FC = () => {
         <form onSubmit={handleForgetting} className="p-6 rounded-2xl glass-card border border-white/10 space-y-4 flex flex-col justify-between">
           <div className="space-y-4">
             <div>
-              <label className="text-xs font-mono text-text-secondary uppercase mb-1.5 block">
-                Target Memory ID to Purge
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-mono text-text-secondary uppercase">
+                  Target Memory ID to Purge
+                </label>
+                {availableMemories.length > 0 && (
+                  <select
+                    onChange={(e) => setMemoryId(e.target.value)}
+                    value={memoryId}
+                    className="text-[10px] font-mono bg-black/60 border border-white/10 rounded px-2 py-0.5 text-text-secondary"
+                  >
+                    <option value="">-- Quick Select Memory --</option>
+                    {availableMemories.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        [{m.cognitive_facet}] {m.content.slice(0, 35)}...
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
               <input
                 type="text"
                 value={memoryId}
                 onChange={(e) => setMemoryId(e.target.value)}
                 className="w-full p-3 rounded-xl bg-black/60 border border-white/15 text-xs text-white focus:outline-none focus:border-crimson-500 font-mono"
-                placeholder="e.g. mem-jwt-auth"
+                placeholder="e.g. Memory UUID"
                 required
               />
             </div>

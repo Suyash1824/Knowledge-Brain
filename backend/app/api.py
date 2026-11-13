@@ -16,7 +16,7 @@ from .schemas import (
     MemoryCompileInput, ExtractedMemoryItem,
     MemoryCreate, MemoryResponse, MemoryVersionResponse, MemorySourceResponse,
     MemoryUpdateRequest, MemorySearchRequest, MemorySearchResponse, MemorySearchResultItem,
-    ConflictReport,
+    ConflictReport, ConflictCheckRequest,
     CapsuleQueryRequest, MemoryCapsuleResponse,
     DeletionRequestCreate, DeletionVerificationResponse,
     MCPToolCallRequest, MCPToolCallResponse,
@@ -852,28 +852,46 @@ async def compile_memories(payload: MemoryCompileInput):
 
 @router.post("/compiler/detect-conflicts", tags=["Memory Intelligence"], response_model=ConflictReport)
 async def detect_memory_conflicts(
-    memory_id: Optional[UUID] = None,
-    new_content: str = Query(...),
+    payload: Optional[ConflictCheckRequest] = None,
+    memory_id: Optional[UUID] = Query(None),
+    new_content: Optional[str] = Query(None),
     reference_content: Optional[str] = Query(None),
     db: Optional[Session] = Depends(get_db)
 ):
     """
     Evaluates new information against existing memory content to detect contradictions.
+    Accepts either JSON request body or URL query parameters.
     Can operate against a database record or against reference_content statelessly.
     """
-    existing_content = reference_content or ""
-    if db is not None and memory_id is not None:
-        mem = db.query(Memory).filter(Memory.id == memory_id).first()
+    target_new_content = (payload.new_content if payload and payload.new_content else None) or new_content
+    target_ref_content = (payload.reference_content if payload and payload.reference_content else None) or reference_content
+    target_memory_id = (payload.memory_id if payload and payload.memory_id else None) or memory_id
+
+    if not target_new_content:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Must supply 'new_content' to evaluate for conflicts."
+        )
+
+    existing_content = target_ref_content or ""
+    if db is not None and target_memory_id is not None:
+        mem = db.query(Memory).filter(Memory.id == target_memory_id).first()
         if mem:
             existing_content = mem.content
-    
+
+    if not existing_content and db is not None:
+        recent_m = db.query(Memory).filter(Memory.status.in_(["trusted", "provisional"])).order_by(Memory.created_at.desc()).first()
+        if recent_m:
+            existing_content = recent_m.content
+            target_memory_id = recent_m.id
+
     if not existing_content:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Must supply reference_content or a valid memory_id backed by persistent storage."
         )
-        
-    return ConflictDetector.detect_conflict(existing_content, new_content, memory_id)
+
+    return ConflictDetector.detect_conflict(existing_content, target_new_content, target_memory_id)
 
 
 @router.post("/capsules/generate", response_model=MemoryCapsuleResponse, tags=["Memory Intelligence"])
@@ -895,9 +913,10 @@ async def request_deletion(request: DeletionRequestCreate, db: Session = Depends
     Executes a dependency-aware deletion request. Traces parent/child graph dependencies,
     removes derived memories, zeroes vector embeddings, and generates a multi-store SHA-256 receipt.
     """
+    requester = request.requested_by or uuid4()
     result = ForgettingEngine.execute_deletion(
         target_memory_id=request.memory_id,
-        requested_by=request.requested_by,
+        requested_by=requester,
         reason=request.reason or "User right-to-be-forgotten request",
         db=db
     )

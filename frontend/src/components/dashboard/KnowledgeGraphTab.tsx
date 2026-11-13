@@ -168,6 +168,14 @@ export const KnowledgeGraphTab: React.FC = () => {
             <Controls />
           </ReactFlow>
 
+          {nodes.length === 0 && !loading && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+              <div className="p-4 rounded-xl bg-black/80 border border-white/10 text-xs font-mono text-text-muted text-center max-w-sm">
+                No graph entities found in current scope. Ingest or compile memories to visualize relational DAG links.
+              </div>
+            </div>
+          )}
+
           {/* Canvas Floating Legend */}
           <div className="absolute bottom-4 left-4 p-3 rounded-xl bg-black/80 backdrop-blur-md border border-white/10 text-[10px] font-mono space-y-1.5 pointer-events-none">
             <div className="flex items-center gap-2">

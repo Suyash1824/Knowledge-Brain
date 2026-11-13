@@ -8,6 +8,7 @@ from uuid import UUID, uuid4
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from ..models import (
+    User, Conversation,
     Memory, MemoryVersion, MemorySource,
     MemoryPermission, memory_dependencies, memory_semantic_links
 )
@@ -39,6 +40,19 @@ class MemoryService:
         importance = getattr(mem_data, "importance_score", 0.7) or 0.7
         
         if db is not None:
+            if not mem_data.conversation_id:
+                conv = db.query(Conversation).first()
+                if not conv:
+                    user = db.query(User).first()
+                    if not user:
+                        user = User(id=uuid4(), email="workspace@knowledgebrain.ai", hashed_password="placeholder_hash")
+                        db.add(user)
+                        db.commit()
+                    conv = Conversation(id=uuid4(), user_id=user.id, title="Workspace General Context", metadata_={})
+                    db.add(conv)
+                    db.commit()
+                mem_data.conversation_id = conv.id
+
             # 1. Inspect existing active memories in this conversation for contradictions or updates
             existing = db.query(Memory).filter(
                 Memory.conversation_id == mem_data.conversation_id,

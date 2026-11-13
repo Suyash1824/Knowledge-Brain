@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { ArrowRight, Brain, Cpu, Database, Layers, Share2, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { api } from '../services/api';
 
 import { Navbar } from '../components/common/Navbar';
 import { Footer } from '../components/common/Footer';
@@ -22,9 +23,20 @@ import { CtaSection } from '../components/sections/CtaSection';
 
 export const LandingPage: React.FC = () => {
   const [introCompleted, setIntroCompleted] = useState(false);
+  const [systemStatus, setSystemStatus] = useState<string>('healthy');
+  const [stats, setStats] = useState<any>(null);
   const { scrollY } = useScroll();
   const heroOpacity = useTransform(scrollY, [0, 380], [1, 0]);
   const heroY = useTransform(scrollY, [0, 380], [0, -45]);
+
+  useEffect(() => {
+    api.getHealth()
+      .then((h) => setSystemStatus(h.status))
+      .catch(() => setSystemStatus('offline'));
+    api.getDashboardStats()
+      .then(setStats)
+      .catch(console.error);
+  }, []);
 
   return (
     <div className="relative min-h-screen bg-[#050505] text-text-primary selection:bg-crimson-500/30 selection:text-white overflow-x-hidden">
@@ -38,7 +50,7 @@ export const LandingPage: React.FC = () => {
       <ParticleCanvas density={110} />
 
       {/* Top Floating Navbar */}
-      <Navbar />
+      <Navbar systemStatus={systemStatus} />
 
       {/* HERO SECTION — CINEMATIC LIVING INTELLIGENCE CORE */}
       <section
@@ -163,7 +175,7 @@ export const LandingPage: React.FC = () => {
 
           {/* Bottom Telemetry Metrics Pill Bar */}
           <div className="w-full relative z-30 mt-1 sm:mt-2">
-            <HeroMetrics />
+            <HeroMetrics stats={stats} />
           </div>
         </div>
       </section>
