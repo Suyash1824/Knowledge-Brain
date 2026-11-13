@@ -57,11 +57,19 @@
 
 ---
 
-### Phase 3 – Cross-Agent Integration & Frontend Dashboard (NOT STARTED - AWAITING APPROVAL)
-- [ ] Connect live Neon Cloud PostgreSQL instance with `pgvector` via `.env`.
-- [ ] Multi-agent orchestration workflows (LangGraph & CrewAI accessing Knowledge Brain via MCP).
-- [ ] React + Tailwind CSS interactive frontend dashboard.
-- [ ] Performance and storage evaluation benchmarks.
+### Phase 3 – Live Database, Multi-Agent MCP Integration & Frontend Dashboard (IN PROGRESS)
+- [x] **Milestone 3.1: Database Migration & Provisioning Pipeline Prepared:**
+  - Automated migration runner (`scripts/migrate_database.py`) enabling `pgvector`, deploying all 10 tables, and building HNSW index.
+  - Live database verification harness (`scripts/verify_live_database.py`) testing persistent CRUD, vector cosine queries, versioning, and cascade forgetting.
+  - Connection sanitization in `backend/app/database.py` (zero credential leakage).
+  - Safe unconfigured state handling maintained until user configures `.env`.
+- [ ] **Milestone 3.2: Standalone MCP Server & Dual-Agent Integration (Cursor AI & Google Antigravity):**
+  - Stdio JSON-RPC 2.0 MCP server (`backend/mcp_server.py`) exposing 6 core memory tools.
+  - Client configurations for Cursor AI (`.cursor/mcp.json`) and Google Antigravity (`.agents/mcp_config.json`).
+  - Automated two-way continuity demonstration harness.
+- [ ] **Milestone 3.3: React + Tailwind CSS Interactive Infrastructure Dashboard:**
+  - Overview, Memory Explorer, Capsule Inspector, Relationship Graph, Conflict Review, Provenance Audit, and Agent Monitor.
+- [ ] **Milestone 3.4: Performance Evaluation & Token Savings Benchmarks.**
 
 ---
 

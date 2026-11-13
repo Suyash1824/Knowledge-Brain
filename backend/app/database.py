@@ -2,9 +2,11 @@
 Database connection and session management for Knowledge Brain.
 Supports Neon PostgreSQL with pgvector extension.
 Enforces 503 Service Unavailable on persistent operations when unconfigured.
+Sanitizes all connection strings and logs to prevent credential leakage.
 """
 
 import os
+import re
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
@@ -15,10 +17,14 @@ from .models import Base
 # Load environment variables
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-
 engine = None
 SessionLocal = None
+
+def sanitize_db_url(url: str = None) -> str:
+    """Masks password in connection strings to prevent credential exposure in logs."""
+    if not url:
+        return "None"
+    return re.sub(r"://([^:]+):([^@]+)@", r"://\1:***@", url)
 
 def get_engine():
     global engine, SessionLocal
@@ -26,11 +32,11 @@ def get_engine():
         return engine
     
     url = os.getenv("DATABASE_URL")
-    if not url or "your-neon-host" in url or "<neon-host>" in url:
+    if not url or "your-neon-host" in url or "<neon-host>" in url or "<password>" in url:
         # DB not yet configured with real credentials
         return None
     
-    # Neon PostgreSQL requires SSL; ensure sslmode is present if using postgresql://
+    # Neon PostgreSQL requires SSL; ensure sslmode is present
     if "sslmode" not in url and ("neon.tech" in url or "postgres" in url):
         separator = "&" if "?" in url else "?"
         url = f"{url}{separator}sslmode=require"
@@ -75,26 +81,44 @@ def require_db():
                 "message": "Persistent storage is currently unavailable. Configure DATABASE_URL in .env to enable memory persistence."
             }
         )
-    db = SessionLocal()
     try:
+        db = SessionLocal()
         yield db
+    except OperationalError as e:
+        safe_msg = re.sub(r"://([^:]+):([^@]+)@", r"://\1:***@", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "error": "DatabaseConnectionFailed",
+                "message": f"Unable to reach PostgreSQL database: {safe_msg[:120]}"
+            }
+        )
     finally:
-        db.close()
+        if 'db' in locals():
+            db.close()
 
 def check_db_health() -> dict:
     """
-    Checks database connectivity and pgvector extension availability.
+    Checks database connectivity, verifies pgvector extension, and safely reports status.
     """
     url = os.getenv("DATABASE_URL")
-    if not url or "<neon-host>" in url or "your-neon-host" in url:
+    if not url or "<neon-host>" in url or "your-neon-host" in url or "<password>" in url:
         return {
             "status": "unconfigured",
             "message": "DATABASE_URL is not configured with live credentials in .env",
-            "pgvector_available": False
+            "pgvector_available": False,
+            "target": "unconfigured"
         }
     
     try:
         eng = get_engine()
+        if eng is None:
+            return {
+                "status": "unconfigured",
+                "message": "Database engine initialization skipped (placeholder credentials detected)",
+                "pgvector_available": False,
+                "target": sanitize_db_url(url)
+            }
         with eng.connect() as conn:
             conn.execute(text("SELECT 1"))
             res = conn.execute(text(
@@ -103,12 +127,15 @@ def check_db_health() -> dict:
             vector_installed = res is not None and res[0] is not None
             return {
                 "status": "connected",
-                "message": "Successfully connected to PostgreSQL",
-                "pgvector_available": vector_installed
+                "message": "Successfully connected to PostgreSQL database",
+                "pgvector_available": vector_installed,
+                "target": sanitize_db_url(url)
             }
     except Exception as e:
+        safe_err = re.sub(r"://([^:]+):([^@]+)@", r"://\1:***@", str(e))
         return {
             "status": "connection_error",
-            "message": str(e),
-            "pgvector_available": False
+            "message": f"Database connection error: {safe_err[:120]}",
+            "pgvector_available": False,
+            "target": sanitize_db_url(url)
         }
