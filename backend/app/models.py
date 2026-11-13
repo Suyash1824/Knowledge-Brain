@@ -6,7 +6,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import expression
-from sqlalchemy.ext.mutable import MutableDict
+from sqlalchemy.ext.mutable import MutableDict, MutableList
 from pgvector.sqlalchemy import Vector
 
 Base = declarative_base()
@@ -215,7 +215,7 @@ class ExperienceRecord(Base):
     session_id = Column(String(128), nullable=True)
     turn_index = Column(Integer, default=0)
     raw_payload = Column(MutableDict.as_mutable(JSONB), default=dict)
-    extracted_candidates = Column(MutableDict.as_mutable(JSONB), default=list)
+    extracted_candidates = Column(MutableList.as_mutable(JSONB), default=list)
     is_consolidated = Column(Boolean, default=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
@@ -229,7 +229,7 @@ class ContextRecord(Base):
     context_domain = Column(String(64), nullable=False, default="task") # project, task, decision, constraint, situation, dependency
     active_status = Column(String(32), default="active", index=True) # active, completed, blocked, deferred, archived
     associated_experience_count = Column(Integer, default=0)
-    evolution_history = Column(MutableDict.as_mutable(JSONB), default=list)
+    evolution_history = Column(MutableList.as_mutable(JSONB), default=list)
     promotion_readiness = Column(Float, default=0.0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
