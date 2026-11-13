@@ -34,7 +34,13 @@ from app.conflict.detector import ConflictDetector
 from app.forgetting.engine import ForgettingEngine
 from app.services.memory_service import MemoryService
 from app.services.embedding_service import get_embedding
-from app.schemas import MemoryCreate, CapsuleQueryRequest
+from app.services.hierarchical_service import HierarchicalMemoryService
+from app.ingestion.engine import RuntimeIngestionEngine
+from app.retrieval.engine import HierarchicalRetrievalEngine
+from app.schemas import (
+    MemoryCreate, CapsuleQueryRequest,
+    RuntimeEventIngestRequest, HierarchicalRetrieveRequest
+)
 
 # Configure logging to stderr so stdio JSON-RPC remains clean
 logging.basicConfig(
@@ -492,6 +498,137 @@ async def forget_memory(
             "details": receipt["details"]
         }
         return json.dumps(serializable_receipt, indent=2)
+    finally:
+        db.close()
+
+
+# ==============================================================================
+# Progressive Hierarchical MCP Tools (Sprint 6)
+# ==============================================================================
+
+hierarchical_ingestion_engine = RuntimeIngestionEngine()
+hierarchical_retrieval_engine = HierarchicalRetrievalEngine()
+
+@server.tool(
+    name="ingest_experience",
+    description="Ingests raw AI agent conversation turns, observations, or tool outputs into Level 1 Experience Memory with progressive candidate extraction, idempotency, and optional synchronous consolidation."
+)
+async def ingest_experience(
+    raw_text: str,
+    event_type: str = "conversation_turn",
+    conversation_id: Optional[str] = None,
+    agent_id: Optional[str] = None,
+    turn_index: int = 0,
+    synchronous_promotion: bool = True
+) -> str:
+    effective_agent = agent_id or os.getenv("KB_AGENT_ID", "mcp_agent")
+    db = get_db_session()
+    if not db:
+        return json.dumps({"error": "DatabaseNotConfigured", "message": "Persistent storage unavailable."})
+        
+    try:
+        conv_uuid = None
+        if conversation_id:
+            try:
+                conv_uuid = UUID(conversation_id)
+            except ValueError:
+                return json.dumps({"error": f"Invalid conversation_id UUID: {conversation_id}"})
+        else:
+            _, conv_uuid = resolve_default_user_and_conv(db, effective_agent)
+
+        req = RuntimeEventIngestRequest(
+            conversation_id=conv_uuid,
+            event_type=event_type,
+            agent_id=effective_agent,
+            turn_index=turn_index,
+            raw_text=raw_text,
+            synchronous_promotion=synchronous_promotion
+        )
+        res = hierarchical_ingestion_engine.ingest_runtime_event(db=db, request=req)
+        return json.dumps(res.model_dump(mode="json"), indent=2)
+    finally:
+        db.close()
+
+
+@server.tool(
+    name="retrieve_hierarchical_memory",
+    description="Retrieves memories with automatic or specified depth routing (Level 1 Experience, Level 2 Context, Level 3 Knowledge, or Multi-tier), packing results into a defensive, token-budgeted Memory Capsule."
+)
+async def retrieve_hierarchical_memory(
+    query: str,
+    depth: str = "auto",
+    conversation_id: Optional[str] = None,
+    agent_id: Optional[str] = None,
+    max_tokens: int = 400
+) -> str:
+    effective_agent = agent_id or os.getenv("KB_AGENT_ID", "mcp_agent")
+    db = get_db_session()
+    if not db:
+        return json.dumps({"error": "DatabaseNotConfigured", "message": "Persistent storage unavailable."})
+
+    try:
+        conv_uuid = None
+        if conversation_id:
+            try:
+                conv_uuid = UUID(conversation_id)
+            except ValueError:
+                pass
+
+        req = HierarchicalRetrieveRequest(
+            query=query,
+            depth=depth,
+            conversation_id=conv_uuid,
+            agent_id=effective_agent,
+            max_tokens=max_tokens
+        )
+        capsule = hierarchical_retrieval_engine.retrieve(db=db, request=req)
+        return json.dumps(capsule.model_dump(mode="json"), indent=2)
+    finally:
+        db.close()
+
+
+@server.tool(
+    name="promote_memory",
+    description="Promotes an existing memory up the hierarchy (Level 1 -> Level 2 Context or Level 2 -> Level 3 Knowledge) upon meeting quality, recurrence, and stability criteria."
+)
+async def promote_memory(
+    memory_id: str,
+    target_level: int = 3,
+    promoted_by: Optional[str] = None,
+    reason: str = "Agent requested promotion"
+) -> str:
+    effective_agent = promoted_by or os.getenv("KB_AGENT_ID", "mcp_agent")
+    db = get_db_session()
+    if not db:
+        return json.dumps({"error": "DatabaseNotConfigured", "message": "Persistent storage unavailable."})
+
+    try:
+        mem_uuid = UUID(memory_id)
+        if target_level == 2:
+            res = HierarchicalMemoryService.consolidate_experience_to_context(
+                db=db,
+                experience_memory_id=mem_uuid,
+                agent_id=effective_agent
+            )
+        elif target_level == 3:
+            res = HierarchicalMemoryService.promote_to_knowledge(
+                db=db,
+                context_memory_id=mem_uuid,
+                promoted_by=effective_agent,
+                force=True
+            )
+        else:
+            return json.dumps({"error": "Invalid target_level. Must be 2 or 3."})
+
+        return json.dumps({
+            "memory_id": str(res.id),
+            "hierarchy_level": res.hierarchy_level,
+            "promotion_status": res.promotion_status,
+            "content": res.content,
+            "promoted_by": res.promoted_by
+        }, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
     finally:
         db.close()
 

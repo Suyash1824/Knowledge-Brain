@@ -24,13 +24,17 @@ from .schemas import (
     ConversationCreateRequest, ConversationResponse,
     RelationshipCreateRequest, RelationshipResponse, KnowledgeGraphResponse, GraphNode, GraphEdge,
     AgentSummaryResponse, MemoryPermissionCreateRequest, MemoryPermissionResponse,
-    DashboardStatsResponse
+    DashboardStatsResponse,
+    RuntimeEventIngestRequest, RuntimeEventIngestResponse,
+    HierarchicalRetrieveRequest, HierarchicalCapsuleResponse,
+    MemoryPromoteRequest, MemoryDemoteRequest, LifecycleEventResponse
 )
 from .database import check_db_health, get_db, require_db
 from .models import (
     User, Conversation, Memory, MemoryVersion, MemorySource,
     MemoryPermission, DeletionRequest, VerificationRecord,
-    memory_dependencies, memory_semantic_links
+    memory_dependencies, memory_semantic_links,
+    ExperienceRecord, ContextRecord, KnowledgeRecord, LifecycleEvent
 )
 from .compiler.extractor import MemoryExtractor
 from .compiler.sanitizer import MemorySanitizer
@@ -39,11 +43,16 @@ from .capsule.generator import MemoryCapsuleGenerator
 from .forgetting.engine import ForgettingEngine
 from .services.memory_service import MemoryService
 from .services.embedding_service import get_embedding
+from .services.hierarchical_service import HierarchicalMemoryService
+from .ingestion.engine import RuntimeIngestionEngine
+from .retrieval.engine import HierarchicalRetrievalEngine
 from .auth.security import hash_password, verify_password, create_access_token
 from .auth.dependencies import get_current_user, get_optional_current_user
 
 router = APIRouter()
 extractor = MemoryExtractor()
+ingestion_engine = RuntimeIngestionEngine()
+retrieval_engine = HierarchicalRetrievalEngine()
 
 
 # ==============================================================================
@@ -981,4 +990,210 @@ async def mcp_tool_call(call: MCPToolCallRequest, db: Optional[Session] = Depend
             is_error=False
         )
         
+    elif call.name == "kb_ingest_experience":
+        if db is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Database unconfigured: cannot ingest experience memory without persistent storage."
+            )
+        conv_id = UUID(args.get("conversation_id", str(uuid4())))
+        ingest_req = RuntimeEventIngestRequest(
+            conversation_id=conv_id,
+            event_type=args.get("event_type", "conversation_turn"),
+            agent_id=args.get("agent_id", "mcp_agent"),
+            raw_text=args.get("raw_text", ""),
+            synchronous_promotion=args.get("synchronous_promotion", True)
+        )
+        ingest_res = ingestion_engine.ingest_runtime_event(db=db, request=ingest_req)
+        return MCPToolCallResponse(
+            content=[{"type": "json", "data": ingest_res.model_dump(mode="json")}],
+            is_error=False
+        )
+
+    elif call.name == "kb_retrieve_hierarchical":
+        if db is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Database unconfigured: cannot execute hierarchical retrieval without persistent storage."
+            )
+        ret_req = HierarchicalRetrieveRequest(
+            query=args.get("query", ""),
+            depth=args.get("depth", "auto"),
+            agent_id=args.get("agent_id", "mcp_agent"),
+            max_tokens=args.get("max_tokens", 400)
+        )
+        capsule = retrieval_engine.retrieve(db=db, request=ret_req)
+        return MCPToolCallResponse(
+            content=[{"type": "json", "data": capsule.model_dump(mode="json")}],
+            is_error=False
+        )
+
     raise HTTPException(status_code=400, detail=f"Unsupported MCP tool '{call.name}'")
+
+
+# ==============================================================================
+# 11. Progressive Hierarchical Memory Endpoints (Level 1, Level 2, Level 3)
+# ==============================================================================
+
+@router.post("/hierarchical/ingest", response_model=RuntimeEventIngestResponse, status_code=status.HTTP_201_CREATED, tags=["Hierarchical Memory"])
+async def ingest_runtime_event(
+    payload: RuntimeEventIngestRequest,
+    db: Session = Depends(require_db)
+):
+    """
+    Ingests raw AI agent conversational events, observations, or tool outputs into Level 1 Experience Memory.
+    Extracts candidate items, validates security, detects conflicts, and conditionally consolidates into Context.
+    """
+    return ingestion_engine.ingest_runtime_event(db=db, request=payload)
+
+
+@router.post("/hierarchical/retrieve", response_model=HierarchicalCapsuleResponse, tags=["Hierarchical Memory"])
+async def retrieve_hierarchical_memory(
+    payload: HierarchicalRetrieveRequest,
+    db: Session = Depends(require_db)
+):
+    """
+    Depth-aware retrieval engine. Analyzes query intent to dynamically route to Level 1, Level 2, Level 3, or Multi-tier.
+    Filters by permissions, drops expired transient memories, and packs a defensive Memory Capsule within token budget.
+    """
+    return retrieval_engine.retrieve(db=db, request=payload)
+
+
+@router.post("/hierarchical/promote/{memory_id}", response_model=MemoryResponse, tags=["Hierarchical Memory"])
+async def promote_memory(
+    memory_id: UUID,
+    payload: MemoryPromoteRequest,
+    db: Session = Depends(require_db)
+):
+    """
+    Promotes an existing memory up the hierarchy (Level 1 -> Level 2 Context or Level 2 -> Level 3 Knowledge)
+    after verifying promotion criteria, evidence thresholds, and recording immutable lifecycle events.
+    """
+    mem = db.query(Memory).filter(Memory.id == memory_id).first()
+    if not mem:
+        raise HTTPException(status_code=404, detail=f"Memory {memory_id} not found.")
+
+    if payload.target_level == 2:
+        res = HierarchicalMemoryService.consolidate_experience_to_context(
+            db=db,
+            experience_memory_id=memory_id,
+            agent_id=payload.promoted_by
+        )
+    elif payload.target_level == 3:
+        try:
+            res = HierarchicalMemoryService.promote_to_knowledge(
+                db=db,
+                context_memory_id=memory_id,
+                promoted_by=payload.promoted_by,
+                force=True
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+    else:
+        raise HTTPException(status_code=400, detail="Target level must be 2 (Context) or 3 (Knowledge).")
+
+    return MemoryResponse(
+        id=res.id,
+        conversation_id=res.conversation_id,
+        content=res.content,
+        memory_type=res.memory_type,
+        status=res.status,
+        confidence_score=res.confidence_score,
+        importance_score=getattr(res, "importance_score", 0.7) or 0.7,
+        metadata_=res.metadata_ or {},
+        valid_until=res.valid_until,
+        created_at=res.created_at,
+        updated_at=res.updated_at,
+        hierarchy_level=res.hierarchy_level,
+        promotion_status=res.promotion_status,
+        evidence_count=res.evidence_count,
+        quality_score=res.quality_score,
+        promoted_at=res.promoted_at,
+        promoted_by=res.promoted_by,
+        parent_context_id=res.parent_context_id,
+        superseded_by_id=res.superseded_by_id
+    )
+
+
+@router.post("/hierarchical/demote/{memory_id}", response_model=MemoryResponse, tags=["Hierarchical Memory"])
+async def demote_memory(
+    memory_id: UUID,
+    payload: MemoryDemoteRequest,
+    db: Session = Depends(require_db)
+):
+    """Demotes a memory down the hierarchy due to obsolescence or partial deprecation."""
+    try:
+        res = HierarchicalMemoryService.demote_memory(
+            db=db,
+            memory_id=memory_id,
+            target_level=payload.target_level,
+            reason=payload.reason
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    return MemoryResponse(
+        id=res.id,
+        conversation_id=res.conversation_id,
+        content=res.content,
+        memory_type=res.memory_type,
+        status=res.status,
+        confidence_score=res.confidence_score,
+        importance_score=getattr(res, "importance_score", 0.7) or 0.7,
+        metadata_=res.metadata_ or {},
+        valid_until=res.valid_until,
+        created_at=res.created_at,
+        updated_at=res.updated_at,
+        hierarchy_level=res.hierarchy_level,
+        promotion_status=res.promotion_status,
+        evidence_count=res.evidence_count,
+        quality_score=res.quality_score,
+        promoted_at=res.promoted_at,
+        promoted_by=res.promoted_by,
+        parent_context_id=res.parent_context_id,
+        superseded_by_id=res.superseded_by_id
+    )
+
+
+@router.get("/hierarchical/lifecycle/{memory_id}", response_model=List[LifecycleEventResponse], tags=["Hierarchical Memory"])
+async def get_memory_lifecycle(
+    memory_id: UUID,
+    db: Session = Depends(require_db)
+):
+    """Retrieves the complete immutable audit trail of tier promotions, demotions, and supersessions for a memory."""
+    events = db.query(LifecycleEvent).filter(
+        LifecycleEvent.memory_id == memory_id
+    ).order_by(LifecycleEvent.created_at.asc()).all()
+    
+    return [
+        LifecycleEventResponse(
+            id=ev.id,
+            memory_id=ev.memory_id,
+            transition_type=ev.transition_type,
+            from_level=ev.from_level,
+            to_level=ev.to_level,
+            reason=ev.reason,
+            triggered_by=ev.triggered_by,
+            metadata_=ev.metadata_ or {},
+            created_at=ev.created_at
+        )
+        for ev in events
+    ]
+
+
+@router.get("/hierarchical/stats", tags=["Hierarchical Memory"])
+async def get_hierarchical_stats(db: Session = Depends(require_db)):
+    """Returns distribution of memories across Level 1 Experience, Level 2 Context, and Level 3 Knowledge."""
+    l1_count = db.query(Memory).filter(Memory.hierarchy_level == 1).count()
+    l2_count = db.query(Memory).filter(Memory.hierarchy_level == 2).count()
+    l3_count = db.query(Memory).filter(Memory.hierarchy_level == 3).count()
+    total = db.query(Memory).count()
+    
+    return {
+        "level_1_experience": l1_count,
+        "level_2_context": l2_count,
+        "level_3_knowledge": l3_count,
+        "total_memories": total,
+        "active_contexts": db.query(ContextRecord).filter(ContextRecord.active_status == "active").count(),
+        "verified_knowledge": db.query(KnowledgeRecord).filter(KnowledgeRecord.verification_level == "verified").count()
+    }

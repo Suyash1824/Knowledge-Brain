@@ -11,7 +11,8 @@ from typing import Tuple, Dict, Any, Optional
 INJECTION_PATTERNS = [
     r"(?i)ignore\s+(all\s+)?(previous|prior)\s+instructions",
     r"(?i)system\s*:\s*you\s+are\s+now",
-    r"(?i)disregard\s+(the\s+)?(above|system\s+prompt)",
+    r"(?i)disregard\s+(all\s+)?(the\s+)?(above|prior|previous|system\s+prompt|system\s+rules)",
+    r"(?i)assistant\s+instruction\s*:",
     r"(?i)admin\s*override",
     r"(?i)jailbreak",
     r"(?i)<\|\s*system\s*\|>",

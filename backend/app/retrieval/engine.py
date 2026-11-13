@@ -73,13 +73,16 @@ class HierarchicalRetrievalEngine:
 
         q_lower = query.lower()
 
+        # Analyze pattern matches across all tiers
+        matched_levels = []
+        
         # Tactical / Debug / Turn Markers -> Level 1 (Experience)
         l1_patterns = [
             r"\b(error|bug|trace|traceback|exception|failed|failure|output|log|logs|last\s+command|terminal|run)\b",
             r"\b(just\s+happened|just\s+ran|what\s+did\s+i\s+say|previous\s+message)\b"
         ]
         if any(re.search(p, q_lower) for p in l1_patterns):
-            return [1], "experience", "Query targets recent tactical events, errors, or execution logs."
+            matched_levels.append(1)
 
         # Active Task / Project / Dependency Markers -> Level 2 (Context)
         l2_patterns = [
@@ -87,7 +90,7 @@ class HierarchicalRetrievalEngine:
             r"\b(current\s+situation|project\s+state|working\s+on|active\s+plan)\b"
         ]
         if any(re.search(p, q_lower) for p in l2_patterns):
-            return [2], "context", "Query targets active tasks, working project status, or task dependencies."
+            matched_levels.append(2)
 
         # Invariant / Architectural / Preference Markers -> Level 3 (Knowledge)
         l3_patterns = [
@@ -96,7 +99,14 @@ class HierarchicalRetrievalEngine:
             r"\b(database\s+schema|orm|jwt|encryption|invariant)\b"
         ]
         if any(re.search(p, q_lower) for p in l3_patterns):
-            return [3], "knowledge", "Query targets validated architectural rules, long-term conventions, or preferences."
+            matched_levels.append(3)
+
+        if len(matched_levels) > 1:
+            return matched_levels, "all", f"Multi-tier query matching levels {matched_levels}."
+        elif len(matched_levels) == 1:
+            lvl = matched_levels[0]
+            name_map = {1: "experience", 2: "context", 3: "knowledge"}
+            return [lvl], name_map[lvl], f"Targeted query routed to Level {lvl} ({name_map[lvl]})."
 
         # Default: Balanced Multi-Tier synthesis
         return [1, 2, 3], "all", "General or synthesizing query requiring multi-tier memory grounding."
