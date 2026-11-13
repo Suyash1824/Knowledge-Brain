@@ -1,0 +1,38 @@
+# Knowledge Brain — Remote Neon Cloud PostgreSQL Compose Override
+# Use when connecting to managed Neon Cloud PostgreSQL instance:
+# docker-compose -f docker-compose.neon.yml up --build
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kb-api-neon
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      SECRET_KEY: ${SECRET_KEY:-kb_prod_secret_key_change_in_production_998877}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      PYTHONPATH: /app
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kb-worker-neon
+    restart: unless-stopped
+    command: ["python", "-m", "app.ingestion.worker"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      PYTHONPATH: /app
+    depends_on:
+      api:
+        condition: service_healthy

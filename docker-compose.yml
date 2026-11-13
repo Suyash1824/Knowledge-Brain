@@ -1,0 +1,84 @@
+services:
+  # ==============================================================================
+  # 1. PostgreSQL Database with pgvector Extension
+  # ==============================================================================
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: kb-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-knowledge_brain}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-knowledge_brain}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kb-network
+
+  # ==============================================================================
+  # 2. FastAPI Backend API Server
+  # ==============================================================================
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kb-api
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@db:5432/knowledge_brain}
+      SECRET_KEY: ${SECRET_KEY:-kb_prod_secret_key_change_in_production_998877}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      PYTHONPATH: /app
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kb-network
+
+  # ==============================================================================
+  # 3. Background Ingestion & Consolidation Worker
+  # ==============================================================================
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kb-worker
+    restart: unless-stopped
+    command: ["python", "-m", "app.ingestion.worker"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@db:5432/knowledge_brain}
+      PYTHONPATH: /app
+    depends_on:
+      db:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    networks:
+      - kb-network
+
+# ==============================================================================
+# Persistent Volumes & Networks
+# ==============================================================================
+volumes:
+  pgdata:
+    driver: local
+
+networks:
+  kb-network:
+    driver: bridge
