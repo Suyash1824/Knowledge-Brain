@@ -459,15 +459,160 @@ Tokens are signed with HS256 and expire according to `ACCESS_TOKEN_EXPIRE_MINUTE
 
 ---
 
-## 10. Frontend Component Mapping Matrix
+## 10. Progressive Hierarchical Memory Endpoints (Level 1, Level 2, Level 3)
+
+The progressive hierarchical architecture separates runtime raw events (Level 1 Experience), synthesized task/project contexts (Level 2 Context), and validated stable patterns (Level 3 Knowledge).
+
+### 10.1 Ingest Runtime Agent Event
+- **Method / Path:** `POST /api/hierarchical/ingest`
+- **Frontend View:** Agent Activity Stream / Ingestion Feed
+- **Status:** `201 Created`
+- **Request Body:**
+  ```json
+  {
+    "conversation_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "event_type": "conversation_turn",
+    "agent_id": "cursor-ai",
+    "session_id": "sess_8899",
+    "turn_index": 1,
+    "raw_text": "We decided to deploy the frontend with Vite and Tailwind CSS on port 5173.",
+    "context_metadata": { "environment": "development" },
+    "synchronous_promotion": false
+  }
+  ```
+- **Response (`201 Created`):**
+  ```json
+  {
+    "experience_memory_id": "06a2def2-689b-4c12-a44a-b7d724f99623",
+    "content": "We decided to deploy the frontend with Vite and Tailwind CSS on port 5173.",
+    "hierarchy_level": 1,
+    "extracted_candidates_count": 1,
+    "candidates": [
+      {
+        "content": "Deploy the frontend with Vite and Tailwind CSS on port 5173",
+        "memory_type": "decision",
+        "confidence": 0.95
+      }
+    ],
+    "context_consolidated": false,
+    "parent_context_id": null
+  }
+  ```
+
+### 10.2 Depth-Aware Hierarchical Retrieval
+- **Method / Path:** `POST /api/hierarchical/retrieve`
+- **Frontend View:** Depth-Aware Retrieval Playground / Agent Inspector
+- **Request Body:**
+  ```json
+  {
+    "query": "What is our frontend tooling and port?",
+    "depth": "auto",
+    "conversation_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "agent_id": "antigravity-ai",
+    "max_tokens": 400,
+    "include_provenance": true
+  }
+  ```
+- **Response (`200 OK`):**
+  ```json
+  {
+    "capsule_id": "b385e2b0-8bf1-4770-b747-07ea0ba0de12",
+    "query": "What is our frontend tooling and port?",
+    "determined_depth": "context",
+    "total_tokens": 45,
+    "token_budget": 400,
+    "budget_exhausted": false,
+    "experience_items_count": 0,
+    "context_items_count": 1,
+    "knowledge_items_count": 0,
+    "entries": [
+      {
+        "memory_id": "06a2def2-689b-4c12-a44a-b7d724f99623",
+        "hierarchy_level": 2,
+        "content": "Frontend tooling configured: Vite, React 18, and Tailwind CSS on port 5173",
+        "memory_type": "decision",
+        "status": "trusted",
+        "relevance_score": 0.92,
+        "token_count": 18
+      }
+    ],
+    "capsule_data_wrapped": "<memory_data is_instruction=\"false\">\n[CONTEXT-L2] (decision, score: 0.92): Frontend tooling configured: Vite, React 18, and Tailwind CSS on port 5173\n</memory_data>"
+  }
+  ```
+
+### 10.3 Promote Memory Tier
+- **Method / Path:** `POST /api/hierarchical/promote/{memory_id}`
+- **Frontend View:** Memory Drawer / Hierarchy Control
+- **Request Body:**
+  ```json
+  {
+    "target_level": 3,
+    "reason": "Validated across multiple sessions by user and agent agreement",
+    "promoted_by": "user"
+  }
+  ```
+- **Response (`200 OK`):** Returns the updated `MemoryResponse` with `hierarchy_level=3`, `promotion_status="promoted"`, `promoted_at`, and `promoted_by`.
+
+### 10.4 Demote Memory Tier
+- **Method / Path:** `POST /api/hierarchical/demote/{memory_id}`
+- **Frontend View:** Memory Drawer / Demote Action
+- **Request Body:**
+  ```json
+  {
+    "target_level": 1,
+    "reason": "Obsolescence: Project migrated to Next.js"
+  }
+  ```
+- **Response (`200 OK`):** Returns `MemoryResponse` reflecting the demoted hierarchy level.
+
+### 10.5 Get Memory Lifecycle Audit Trail
+- **Method / Path:** `GET /api/hierarchical/lifecycle/{memory_id}`
+- **Frontend View:** Memory Lifecycle Drawer / Version History
+- **Response (`200 OK`):**
+  ```json
+  [
+    {
+      "id": "713214c7-1ba3-4c90-84cf-cbcfc717bf55",
+      "memory_id": "42e84392-bca7-4d42-9f5a-0863298f03bc",
+      "transition_type": "promote",
+      "from_level": 2,
+      "to_level": 3,
+      "reason": "Consolidated and verified stable invariant",
+      "triggered_by": "hierarchical_service",
+      "metadata": {},
+      "created_at": "2026-11-13T13:15:33Z"
+    }
+  ]
+  ```
+
+### 10.6 Hierarchical Stats & Distribution
+- **Method / Path:** `GET /api/hierarchical/stats`
+- **Frontend View:** Hierarchy Pyramid Dashboard Widget
+- **Response (`200 OK`):**
+  ```json
+  {
+    "level_1_experience": 15,
+    "level_2_context": 8,
+    "level_3_knowledge": 4,
+    "total_memories": 27,
+    "active_contexts": 6,
+    "verified_knowledge": 4
+  }
+  ```
+
+---
+
+## 11. Frontend Component Mapping Matrix
 
 | Dashboard View / Component | Relevant Backend Endpoints | Key Features |
 |:---------------------------|:---------------------------|:-------------|
-| **System Header** | `GET /api/health`, `GET /api/auth/me` | Real-time Neon DB connection status, user profile, logout |
-| **Overview Dashboard** | `GET /api/dashboard/stats` | KPI counters, facet donut chart, trust breakdown, agent activity |
-| **Memory Explorer** | `GET /api/memories`, `POST /api/memories/search`, `POST /api/memories`, `DELETE /api/memories/{id}` | Facet filtering, full-text & pgvector cosine similarity search, memory creation |
-| **Memory Detail & Drawer** | `GET /api/memories/{id}`, `PUT /api/memories/{id}`, `GET /api/memories/{id}/versions`, `GET /api/memories/{id}/provenance` | Non-destructive editing, version timeline diff, provenance source inspector |
-| **Knowledge Graph** | `GET /api/graph`, `POST /api/memories/relationships` | Interactive node-link DAG visualization, edge creation with cycle prevention |
-| **Agents & Access Control** | `GET /api/agents`, `GET /api/memories/{id}/permissions`, `POST /api/memories/{id}/permissions` | Per-agent read/write permission matrix, confidential memory locks |
-| **Capsule Playground** | `POST /api/capsules/generate` | Interactive context preview, token budget slider, multi-factor ranking visualization |
+| **System Header** | `GET /api/health`, `GET /api/auth/me` | Real-time database connection status, active user profile, tenant badge, logout |
+| **Overview Dashboard** | `GET /api/dashboard/stats`, `GET /api/hierarchical/stats` | KPI counters, 3-level hierarchy pyramid, facet donut chart, trust breakdown, agent activity |
+| **Hierarchical Memory Explorer** | `GET /api/memories`, `POST /api/memories/search`, `POST /api/hierarchical/ingest` | Tier tabs (L1 Experience, L2 Context, L3 Knowledge), full-text & cosine search, manual experience ingestion |
+| **Memory Detail & Drawer** | `GET /api/memories/{id}`, `PUT /api/memories/{id}`, `GET /api/memories/{id}/versions`, `GET /api/memories/{id}/provenance`, `GET /api/hierarchical/lifecycle/{id}` | Non-destructive editing, version diffs, provenance inspector, lifecycle promotion audit trail |
+| **Hierarchy Lifecycle Manager** | `POST /api/hierarchical/promote/{id}`, `POST /api/hierarchical/demote/{id}` | One-click conditional promotion/demotion between Experience $\to$ Context $\to$ Knowledge |
+| **Knowledge Graph** | `GET /api/graph`, `POST /api/memories/relationships` | Interactive node-link DAG visualization with tier coloring, edge creation with cycle prevention |
+| **Agents & Access Control** | `GET /api/agents`, `GET /api/memories/{id}/permissions`, `POST /api/memories/{id}/permissions` | Per-agent read/write permission matrix (Cursor vs Antigravity), classification locks |
+| **Capsule Playground** | `POST /api/capsules/generate`, `POST /api/hierarchical/retrieve` | Depth-aware context preview (Experience / Context / Knowledge), token budget slider, passive tag inspection |
+| **Conflict & Quality Center** | `POST /api/compiler/detect-conflicts` | Semantic and temporal contradiction detection, recommended resolution actions (supersede, quarantine) |
 | **Audit & Forgetting Log** | `POST /api/forgetting/request-deletion`, `GET /api/forgetting/verify/{request_id}` | Cascading deletion trigger, SHA-256 verifiable cryptographic audit receipts |
