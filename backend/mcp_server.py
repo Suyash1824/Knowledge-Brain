@@ -33,6 +33,7 @@ from app.capsule.generator import MemoryCapsuleGenerator
 from app.conflict.detector import ConflictDetector
 from app.forgetting.engine import ForgettingEngine
 from app.services.memory_service import MemoryService
+from app.services.embedding_service import get_embedding
 from app.schemas import MemoryCreate, CapsuleQueryRequest
 
 # Configure logging to stderr so stdio JSON-RPC remains clean
@@ -405,6 +406,7 @@ async def update_memory(
         
         # Update active row
         mem.content = sanitized_content
+        mem.embedding = get_embedding(sanitized_content)
         mem.updated_at = now
         
         # Record semantic link if not already recorded

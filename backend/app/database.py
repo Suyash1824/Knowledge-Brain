@@ -43,10 +43,18 @@ def get_engine():
 
     engine = create_engine(
         url,
-        pool_size=10,
-        max_overflow=20,
-        pool_recycle=300,
+        pool_size=5,
+        max_overflow=10,
+        pool_recycle=60,
         pool_pre_ping=True,
+        connect_args={
+            "sslmode": "require",
+            "connect_timeout": 15,
+            "keepalives": 1,
+            "keepalives_idle": 30,
+            "keepalives_interval": 10,
+            "keepalives_count": 5
+        }
     )
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     return engine

@@ -82,6 +82,13 @@
     - **Demonstration A (Cursor $\to$ Antigravity):** Cursor saves JWT middleware decisions and pending Redis blacklist task $\to$ Antigravity retrieves Memory Capsule (567ms) and updates task to Version 2 (1174ms).
     - **Demonstration B (Antigravity $\to$ Cursor):** Antigravity saves connection pool configuration and latency facts $\to$ Cursor retrieves Memory Capsule (443ms) with zero lost context.
     - **Demonstration C (Security & ACL):** Restricted memories isolated (Antigravity blocked from reading or updating Cursor's restricted memory; malicious prompt injections defanged and quarantined).
+- [x] **Backend Completion Sprint (COMPLETED & 100% VERIFIED LIVE):**
+  - **Complete Security & Auth Module:** `backend/app/auth/security.py` and `dependencies.py` with real bcrypt password hashing (12 rounds) and RFC 7519 JWT access tokens (HS256).
+  - **34 REST API Endpoints:** Auth (`/api/auth/*`), Conversations (`/api/conversations/*`), Memories CRUD & pgvector cosine similarity search (`/api/memories/*`), Version history & Provenance (`/api/memories/{id}/versions`, `/api/memories/{id}/provenance`), Knowledge Graph (`/api/graph`, `/api/memories/relationships` with DAG cycle rejection), Agent ACLs (`/api/agents`, `/api/memories/{id}/permissions`), Compiler & Conflicts (`/api/compiler/*`), Capsules (`/api/capsules/*`), Cascading Forgetting & SHA-256 Audit (`/api/forgetting/*`), Health & Telemetry (`/api/health`, `/api/dashboard/stats`), MCP HTTP gateway (`/api/mcp/tools/call`).
+  - **Vector Embeddings & pgvector HNSW:** 1,536-dimensional normalized vector embeddings generated on all memory creations and version updates, queried live with `<=>` cosine distance on Neon.
+  - **Database Connection Resilience:** Configured TCP keepalives (`keepalives=1`, `keepalives_idle=30`), `pool_recycle=60`, and `pool_pre_ping=True` in `backend/app/database.py` to prevent serverless idle SSL disconnects.
+  - **Frontend Readiness Contract:** Complete endpoint specification, request/response JSON schemas, and UI component mappings authored in `docs/api_reference.md`.
+  - **Consolidated 14-Suite Automated Verification Harness:** `scripts/verify_backend_complete.py` passing 14/14 test categories against live Neon cloud PostgreSQL.
 - [ ] **Milestone 3.4: React + Tailwind CSS Interactive Infrastructure Dashboard:**
   - Overview, Memory Explorer, Capsule Inspector, Relationship Graph, Conflict Review, Provenance Audit, and Agent Monitor.
 - [ ] **Milestone 3.5: Performance Evaluation & Token Savings Benchmarks.**

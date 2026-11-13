@@ -61,6 +61,18 @@ class ForgettingEngine:
         return True
 
     @classmethod
+    def detect_cycle(cls, parent_id: UUID, child_id: UUID, db: Optional[Session] = None) -> bool:
+        """
+        Returns True if adding edge parent_id -> child_id would introduce a directed cycle.
+        Returns False if acyclic and safe.
+        """
+        try:
+            cls.validate_no_cycle(parent_id, child_id, db)
+            return False
+        except ValueError:
+            return True
+
+    @classmethod
     def trace_cascade_dependencies(cls, target_memory_id: UUID, G: nx.DiGraph) -> Set[str]:
         """
         Uses graph traversal (BFS) to identify all transitive child memories that depend on target_memory_id.

@@ -15,6 +15,7 @@ from ..schemas import MemoryCreate, MemoryResponse, ExtractedMemoryItem, Conflic
 from ..compiler.sanitizer import MemorySanitizer
 from ..compiler.extractor import MemoryExtractor
 from ..conflict.detector import ConflictDetector
+from .embedding_service import get_embedding
 
 class MemoryService:
     @classmethod
@@ -74,6 +75,7 @@ class MemoryService:
                     )
                     db.add(new_version)
                     conflicting_mem.content = sanitized_content
+                    conflicting_mem.embedding = get_embedding(sanitized_content)
                     conflicting_mem.importance_score = max(conflicting_mem.importance_score or 0.7, importance)
                     conflicting_mem.updated_at = now
                     
@@ -115,11 +117,12 @@ class MemoryService:
                     metadata["conflict_flagged"] = True
                     metadata["flagged_against_memory_id"] = str(conflicting_mem.id)
 
-            # 3. Persist new primary memory record
+            # 3. Persist new primary memory record with pgvector embedding
             db_mem = Memory(
                 id=mem_id,
                 conversation_id=mem_data.conversation_id,
                 content=sanitized_content,
+                embedding=get_embedding(sanitized_content),
                 memory_type=mem_data.memory_type,
                 confidence_score=1.0 if sec_status == "trusted" else 0.85,
                 importance_score=importance,

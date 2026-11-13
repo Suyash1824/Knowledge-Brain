@@ -158,3 +158,157 @@ class MCPToolCallResponse(BaseModel):
     content: List[Dict[str, Any]]
     is_error: bool = False
 
+# ==========================================
+# 6. Authentication & User Management Schemas
+# ==========================================
+
+class UserRegisterRequest(BaseModel):
+    email: str = Field(..., description="User email address")
+    password: str = Field(..., min_length=8, description="Password (min 8 chars)")
+
+class UserLoginRequest(BaseModel):
+    email: str = Field(..., description="User email address")
+    password: str = Field(..., description="Password")
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_in_minutes: int = 60
+    user_id: UUID
+    email: str
+
+class UserProfileResponse(BaseModel):
+    id: UUID
+    email: str
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+# ==========================================
+# 7. Extended Memory CRUD & Search Schemas
+# ==========================================
+
+class MemoryUpdateRequest(BaseModel):
+    content: str = Field(..., description="Updated memory text")
+    change_reason: str = Field(default="user_edit", description="Reason for the revision")
+    importance_score: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    agent_id: Optional[str] = Field(default="api_user", description="Agent or user performing the update")
+
+class MemorySearchRequest(BaseModel):
+    query: str = Field(..., description="Semantic search query or keywords")
+    conversation_id: Optional[UUID] = None
+    memory_type: Optional[MemoryType] = None
+    limit: int = Field(default=10, ge=1, le=50)
+    min_similarity: float = Field(default=0.3, ge=0.0, le=1.0)
+    agent_id: Optional[str] = "api_user"
+
+class MemorySearchResultItem(BaseModel):
+    id: UUID
+    conversation_id: UUID
+    content: str
+    memory_type: MemoryType
+    similarity_score: float
+    importance_score: float
+    status: MemoryStatus
+    created_at: datetime
+    updated_at: datetime
+
+class MemorySearchResponse(BaseModel):
+    total: int
+    query: str
+    results: List[MemorySearchResultItem]
+
+# ==========================================
+# 8. Conversation Management Schemas
+# ==========================================
+
+class ConversationCreateRequest(BaseModel):
+    title: str = Field(default="New Workspace Conversation", max_length=255)
+    metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
+
+class ConversationResponse(BaseModel):
+    id: UUID
+    user_id: UUID
+    title: Optional[str]
+    metadata: Dict[str, Any] = Field(alias="metadata_")
+    created_at: datetime
+    memory_count: int = 0
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+# ==========================================
+# 9. Knowledge Graph & Relationships Schemas
+# ==========================================
+
+class RelationshipCreateRequest(BaseModel):
+    source_id: UUID = Field(..., description="Source memory UUID")
+    target_id: UUID = Field(..., description="Target memory UUID")
+    relationship_category: Literal["dependency", "semantic"] = Field(..., description="'dependency' for DAG, 'semantic' for cross-branch links")
+    type: Literal["depends_on", "derives_from", "contradicts", "updates"] = Field(..., description="Relationship edge type")
+
+class RelationshipResponse(BaseModel):
+    source_id: UUID
+    target_id: UUID
+    relationship_category: str
+    type: str
+    created_at: datetime
+
+class GraphNode(BaseModel):
+    id: str
+    label: str
+    memory_type: str
+    importance: float
+    status: str
+
+class GraphEdge(BaseModel):
+    source: str
+    target: str
+    category: str
+    type: str
+
+class KnowledgeGraphResponse(BaseModel):
+    total_nodes: int
+    total_edges: int
+    nodes: List[GraphNode]
+    edges: List[GraphEdge]
+
+# ==========================================
+# 10. Agent Activity & Permissions Schemas
+# ==========================================
+
+class AgentSummaryResponse(BaseModel):
+    agent_id: str
+    total_memories_authored: int
+    total_permissions_held: int
+    last_active_at: Optional[datetime]
+    access_levels: List[str]
+
+class MemoryPermissionCreateRequest(BaseModel):
+    agent_id: str = Field(..., description="Target agent identity (e.g. 'cursor-ai', 'antigravity-ai', '*')")
+    can_read: bool = True
+    can_write: bool = False
+    classification_level: Literal["standard", "confidential", "restricted"] = "standard"
+
+class MemoryPermissionResponse(BaseModel):
+    id: UUID
+    memory_id: UUID
+    agent_id: str
+    can_read: bool
+    can_write: bool
+    classification_level: str
+    model_config = ConfigDict(from_attributes=True)
+
+# ==========================================
+# 11. Dashboard Analytics Summary Schemas
+# ==========================================
+
+class DashboardStatsResponse(BaseModel):
+    total_memories: int
+    total_conversations: int
+    total_agents: int
+    total_verifications: int
+    facet_distribution: Dict[str, int]
+    status_distribution: Dict[str, int]
+    storage_engine: str
+    pgvector_active: bool
+    system_health: str
+
+

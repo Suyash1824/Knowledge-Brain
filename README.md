@@ -33,6 +33,9 @@ Comprehensive technical specifications and system designs are available in the [
   - Stdio JSON-RPC 2.0 communication engine
   - 6 Core MCP tools specifications (`compile_memory`, `retrieve_memories`, `generate_memory_capsule`, `check_memory_conflicts`, `update_memory`, `forget_memory`)
   - Cursor AI and Google Antigravity integration configurations
+- [Complete REST API Reference & Frontend Integration Contract](docs/api_reference.md)
+  - 34 REST API endpoints with request/response schemas, error contracts, and frontend view mappings
+  - Authentication (bcrypt + JWT Bearer), CORS, and rate limiting specs
 - [Current Development Status](DEVELOPMENT_STATUS.md)
 
 ---
@@ -91,6 +94,9 @@ Comprehensive technical specifications and system designs are available in the [
 
 Knowledge Brain includes automated verification suites for architecture validation, core intelligence capabilities, and live MCP tools:
 ```powershell
+# Run Comprehensive Backend Verification (All 14 Test Suites Live on Neon)
+.\venv\Scripts\python.exe scripts/verify_backend_complete.py
+
 # Run Phase 1 Foundation & Schema Verification
 .\venv\Scripts\python.exe scripts/verify_phase1.py
 
