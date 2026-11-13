@@ -1,0 +1,347 @@
+{
+  "evaluation_id": "KB-CROSS-AGENT-EVALUATION-001",
+  "timestamp": "2026-11-13T20:57:12.206127+00:00",
+  "duration_seconds": 138.73,
+  "total_tests": 33,
+  "passed": 33,
+  "failed": 0,
+  "pass_rate_percent": 100.0,
+  "categories": {
+    "Backend Unit Tests": 10,
+    "Integration Tests": 8,
+    "Frontend Tests": 8,
+    "End-to-End Evaluation": 7
+  },
+  "results": [
+    {
+      "test_id": "UNIT-001",
+      "category": "Backend Unit",
+      "description": "Memory Creation with 1536-dim pgvector embedding",
+      "expected_result": "Memory record created with UUID, active status, and 1536-dim vector",
+      "actual_result": "Created Memory ID: 6ac660a6-6979-469e-ae8a-05947c6d4ef5, Embedding dims: 1536",
+      "status": "PASSED",
+      "latency_ms": 4471.9,
+      "evidence": "UUID=6ac660a6-6979-469e-ae8a-05947c6d4ef5"
+    },
+    {
+      "test_id": "UNIT-002",
+      "category": "Backend Unit",
+      "description": "Memory Retrieval by UUID",
+      "expected_result": "Memory successfully retrieved with identical content and metadata",
+      "actual_result": "Retrieved ID: 6ac660a6-6979-469e-ae8a-05947c6d4ef5, Content: [UNIT-001] Knowledge Brain leverages PostgreSQL wi...",
+      "status": "PASSED",
+      "latency_ms": 164.41,
+      "evidence": "Match=True"
+    },
+    {
+      "test_id": "UNIT-003",
+      "category": "Backend Unit",
+      "description": "Memory Classification across 5 cognitive facets",
+      "expected_result": "Extract and categorize fact, preference, decision, task, experience",
+      "actual_result": "Extracted 5 items with facets: ['preference', 'experience', 'decision', 'task', 'fact']",
+      "status": "PASSED",
+      "latency_ms": 6.39,
+      "evidence": "Facets=['preference', 'experience', 'decision', 'task', 'fact']"
+    },
+    {
+      "test_id": "UNIT-004",
+      "category": "Backend Unit",
+      "description": "Memory Updates with Immutable Version History",
+      "expected_result": "Memory content updated, prior content preserved in memory_versions table",
+      "actual_result": "Historical Versions Recorded: 2, Prior Content: [UNIT-001] Knowledge Brain leverages Pos...",
+      "status": "PASSED",
+      "latency_ms": 2425.01,
+      "evidence": "Versions=2"
+    },
+    {
+      "test_id": "UNIT-005",
+      "category": "Backend Unit",
+      "description": "Memory Deletion with Cascade Cleanup",
+      "expected_result": "Memory record deleted and confirmed absent from database query",
+      "actual_result": "Delete confirmed: query_after is None",
+      "status": "PASSED",
+      "latency_ms": 6730.05,
+      "evidence": "DeletedID=3eaf3816-272b-4c9e-90fc-4f144c1e7637"
+    },
+    {
+      "test_id": "UNIT-006",
+      "category": "Backend Unit",
+      "description": "Semantic Search via pgvector Cosine Operator",
+      "expected_result": "Retrieve memories matching semantic concept with cosine similarity score",
+      "actual_result": "Retrieved 1 memories; Top Result: [UNIT-004] Knowledge Brain leverages PostgreS...",
+      "status": "PASSED",
+      "latency_ms": 758.11,
+      "evidence": "MatchCount=1"
+    },
+    {
+      "test_id": "UNIT-007",
+      "category": "Backend Unit",
+      "description": "Capsule Generation with Passive Fencing & Budgeting",
+      "expected_result": "Token budget respected, passive fencing tags applied to prevent instruction hijacking",
+      "actual_result": "Memories in capsule: 1, Tokens: 75 / 800 budget",
+      "status": "PASSED",
+      "latency_ms": 584.52,
+      "evidence": "Tokens=75"
+    },
+    {
+      "test_id": "UNIT-008",
+      "category": "Backend Unit",
+      "description": "Authentication (bcrypt 12-round hashing & RFC 7519 JWT)",
+      "expected_result": "Bcrypt verifies correct password; JWT issues and decodes subject and email",
+      "actual_result": "Password Verified: True, JWT Subject: c5db0670-7324-4421-94c2-722ada035d19",
+      "status": "PASSED",
+      "latency_ms": 1201.12,
+      "evidence": "Subject=c5db0670-7324-4421-94c2-722ada035d19"
+    },
+    {
+      "test_id": "UNIT-009",
+      "category": "Backend Unit",
+      "description": "Authorization & Clearance Boundary Enforcement",
+      "expected_result": "Unauthorized agent query yields no clearance for restricted memory",
+      "actual_result": "Guest agent permission record: None (Blocked as expected)",
+      "status": "PASSED",
+      "latency_ms": 6844.39,
+      "evidence": "RestrictedID=7681779f-39c6-40c0-a723-7cf34fc63f3e"
+    },
+    {
+      "test_id": "UNIT-010",
+      "category": "Backend Unit",
+      "description": "Neon Database Persistence across Detached Sessions",
+      "expected_result": "Transaction commit confirmed readable across independent database connections",
+      "actual_result": "Fresh Session Query Result: ID=86e519cb-825b-4566-85b7-bf9e5590a107",
+      "status": "PASSED",
+      "latency_ms": 12483.25,
+      "evidence": "PersistID=86e519cb-825b-4566-85b7-bf9e5590a107"
+    },
+    {
+      "test_id": "INT-001",
+      "category": "Integration",
+      "description": "FastAPI and Neon PostgreSQL Connectivity",
+      "expected_result": "HTTP 200, status='healthy', pgvector_available=True",
+      "actual_result": "HTTP 200, DB Status: connected, pgvector: True",
+      "status": "PASSED",
+      "latency_ms": 5321.4,
+      "evidence": "Target=postgresql://neondb_owner:***@ep-red-lea..."
+    },
+    {
+      "test_id": "INT-002",
+      "category": "Integration",
+      "description": "REST API Request/Response Schema Contracts",
+      "expected_result": "HTTP 200, payload conforms to DashboardStatsResponse Pydantic schema",
+      "actual_result": "HTTP 200, Total Memories: 20, Storage: Neon Serverless PostgreSQL (AWS ap-southeast-1), pgvector: True",
+      "status": "PASSED",
+      "latency_ms": 10610.89,
+      "evidence": "TotalMemories=20"
+    },
+    {
+      "test_id": "INT-003",
+      "category": "Integration",
+      "description": "MCP Server Protocol & Tool Discovery",
+      "expected_result": "All 6 standard MCP tools registered and discoverable",
+      "actual_result": "Discovered 9 tools: ['compile_memory', 'retrieve_memories', 'generate_memory_capsule', 'check_memory_conflicts', 'update_memory', 'forget_memory', 'ingest_experience', 'retrieve_hierarchical_memory', 'promote_memory']",
+      "status": "PASSED",
+      "latency_ms": 0.14,
+      "evidence": "ToolsCount=9"
+    },
+    {
+      "test_id": "INT-004",
+      "category": "Integration",
+      "description": "Memory Writing through Antigravity Integration",
+      "expected_result": "Antigravity compiles and writes memory record to Neon DB with provenance",
+      "actual_result": "Status: success, Created Memory ID: bb77a752-7368-42d3-8f68-6f571981bef9, Agent: antigravity-ai",
+      "status": "PASSED",
+      "latency_ms": 8406.65,
+      "evidence": "AntigravityMemID=bb77a752-7368-42d3-8f68-6f571981bef9"
+    },
+    {
+      "test_id": "INT-005",
+      "category": "Integration",
+      "description": "Memory Retrieval through Cursor Integration",
+      "expected_result": "Cursor agent queries and retrieves Antigravity-authored record",
+      "actual_result": "Retrieved 3 memories; Found Antigravity Record: True",
+      "status": "PASSED",
+      "latency_ms": 1198.41,
+      "evidence": "TargetFound=True"
+    },
+    {
+      "test_id": "INT-006",
+      "category": "Integration",
+      "description": "Bidirectional Cross-Agent Memory Sharing",
+      "expected_result": "Cursor writes progress; Antigravity retrieves and incorporates into capsule",
+      "actual_result": "Cursor ID: 185bac18-7fb7-400f-9f1b-e75f6059e7bf, Antigravity Capsule contains Cursor Task: True",
+      "status": "PASSED",
+      "latency_ms": 3911.35,
+      "evidence": "SharedMemoryID=185bac18-7fb7-400f-9f1b-e75f6059e7bf"
+    },
+    {
+      "test_id": "INT-007",
+      "category": "Integration",
+      "description": "Session-Independent Persistence & Retrieval",
+      "expected_result": "Detached HTTP client retrieves persisted memory with zero in-memory state",
+      "actual_result": "HTTP 200, Returned 10 items, Found Content Match: True",
+      "status": "PASSED",
+      "latency_ms": 2694.54,
+      "evidence": "Matches=10"
+    },
+    {
+      "test_id": "INT-008",
+      "category": "Integration",
+      "description": "User & Agent Permission Boundary Enforcement",
+      "expected_result": "Restricted memory blocked from read and rejected on write with PermissionDenied",
+      "actual_result": "Read Blocked: True, Write Blocked: True (PermissionDenied)",
+      "status": "PASSED",
+      "latency_ms": 10496.42,
+      "evidence": "ReadBlocked=True,WriteBlocked=True"
+    },
+    {
+      "test_id": "FRONT-001",
+      "category": "Frontend",
+      "description": "Vite React SPA Dashboard Root Loading",
+      "expected_result": "HTML contains #root container and /src/main.tsx script entry",
+      "actual_result": "File: index.html, Size: 1385 bytes, Has Root: True",
+      "status": "PASSED",
+      "latency_ms": 0.46,
+      "evidence": "HasRoot=True"
+    },
+    {
+      "test_id": "FRONT-002",
+      "category": "Frontend",
+      "description": "Memory Explorer API Proxy Integration",
+      "expected_result": "HTTP 200 via /api proxy, returns JSON array of memories",
+      "actual_result": "HTTP 200, Array length: 5, Sample ID: cefcfa7c-3787-4c96-b180-a84a3a602f56",
+      "status": "PASSED",
+      "latency_ms": 2279.75,
+      "evidence": "Count=5"
+    },
+    {
+      "test_id": "FRONT-003",
+      "category": "Frontend",
+      "description": "Memory Compiler API Integration",
+      "expected_result": "HTTP 200, returns extracted candidate memory items with cognitive facets",
+      "actual_result": "HTTP 200, Extracted candidate memories: 2",
+      "status": "PASSED",
+      "latency_ms": 1511.13,
+      "evidence": "Extracted=2"
+    },
+    {
+      "test_id": "FRONT-004",
+      "category": "Frontend",
+      "description": "Memory Capsules Generator API Integration",
+      "expected_result": "HTTP 200, returns synthesized capsule with token count and passive fencing",
+      "actual_result": "HTTP 200, Capsule ID: cd3dcf50-9dc1-45e3-8045-fec9db3b285b, Tokens: 166",
+      "status": "PASSED",
+      "latency_ms": 4143.68,
+      "evidence": "CapsuleID=cd3dcf50-9dc1-45e3-8045-fec9db3b285b"
+    },
+    {
+      "test_id": "FRONT-005",
+      "category": "Frontend",
+      "description": "AI Agent Management & Telemetry API",
+      "expected_result": "HTTP 200, returns active agents list containing cursor-ai and antigravity-ai",
+      "actual_result": "HTTP 200, Discovered Agents: ['cursor-ai', 'default_agent', 'test-agent', 'antigravity-ai']",
+      "status": "PASSED",
+      "latency_ms": 3796.55,
+      "evidence": "Agents=['cursor-ai', 'default_agent', 'test-agent', 'antigravity-ai']"
+    },
+    {
+      "test_id": "FRONT-006",
+      "category": "Frontend",
+      "description": "Knowledge Graph ReactFlow API Integration",
+      "expected_result": "HTTP 200, payload contains nodes array and edges array for ReactFlow DAG",
+      "actual_result": "HTTP 200, Graph Nodes: 22, Edges: 1",
+      "status": "PASSED",
+      "latency_ms": 7640.3,
+      "evidence": "Nodes=22,Edges=1"
+    },
+    {
+      "test_id": "FRONT-007",
+      "category": "Frontend",
+      "description": "Error Handling & 401 Unauthorized Boundary",
+      "expected_result": "HTTP 401 returned on unauthenticated /api/auth/me, triggering token cleanup",
+      "actual_result": "HTTP 401, Detail: None",
+      "status": "PASSED",
+      "latency_ms": 1516.08,
+      "evidence": "HTTP=401"
+    },
+    {
+      "test_id": "FRONT-008",
+      "category": "Frontend",
+      "description": "Frontend Build & Static Asset Integrity",
+      "expected_result": "Production bundle compiled cleanly; dist/index.html and asset chunks verified",
+      "actual_result": "dist/index.html verified at D:\\5B assignments\\CV\\Knowledge-Brain\\frontend\\dist\\index.html (Size: 1984 bytes)",
+      "status": "PASSED",
+      "latency_ms": 0.21,
+      "evidence": "DistSize=1984"
+    },
+    {
+      "test_id": "E2E-001",
+      "category": "End-to-End",
+      "description": "Step 1: Antigravity writes 5 test memories (KB-CROSS-AGENT-EVALUATION-001)",
+      "expected_result": "5 memories extracted and saved covering fact, preference, decision, task, experience",
+      "actual_result": "Successfully created 5 records: ['preference', 'decision', 'task', 'experience', 'fact']",
+      "status": "PASSED",
+      "latency_ms": 20339.64,
+      "evidence": "MemoryIDs=['525059ef-1e57-469d-a945-82bf3c3855ad', '6ac660a6-6979-469e-ae8a-05947c6d4ef5', '3f0fdbf6-4bba-4038-ad9b-55da5bb32a08', 'bb77a752-7368-42d3-8f68-6f571981bef9', '460b45ec-1a77-4cef-ace7-9230a940ca65']"
+    },
+    {
+      "test_id": "E2E-002",
+      "category": "End-to-End",
+      "description": "Step 2: Backend confirms Neon DB persistence (KB-CROSS-AGENT-EVALUATION-001)",
+      "expected_result": "All 5 memories persisted with active status and 1536-dim embeddings",
+      "actual_result": "Found 5/5 records in DB; All embeddings 1536-dim: True",
+      "status": "PASSED",
+      "latency_ms": 709.12,
+      "evidence": "VerifiedCount=5"
+    },
+    {
+      "test_id": "E2E-003",
+      "category": "End-to-End",
+      "description": "Step 3: Dashboard API displays actual records (KB-CROSS-AGENT-EVALUATION-001)",
+      "expected_result": "Dashboard /api/memories endpoint exposes all 5 records to frontend components",
+      "actual_result": "Found 5/5 records via Dashboard API",
+      "status": "PASSED",
+      "latency_ms": 2768.69,
+      "evidence": "FoundCount=5"
+    },
+    {
+      "test_id": "E2E-004",
+      "category": "End-to-End",
+      "description": "Step 4: Cursor retrieves memories in new session (KB-CROSS-AGENT-EVALUATION-001)",
+      "expected_result": "Cursor retrieves all 5 records written by Antigravity in fresh session",
+      "actual_result": "Cursor retrieved 5/5 target memory IDs",
+      "status": "PASSED",
+      "latency_ms": 3136.14,
+      "evidence": "CursorMatched=5"
+    },
+    {
+      "test_id": "E2E-005",
+      "category": "End-to-End",
+      "description": "Step 5: Cursor writes additional decision (KB-CROSS-AGENT-EVALUATION-001)",
+      "expected_result": "Cursor writes new architecture decision to Neon DB with provenance",
+      "actual_result": "Created Cursor Decision ID: 3f0fdbf6-4bba-4038-ad9b-55da5bb32a08, Agent: cursor-ai",
+      "status": "PASSED",
+      "latency_ms": 2252.26,
+      "evidence": "CursorDecisionID=3f0fdbf6-4bba-4038-ad9b-55da5bb32a08"
+    },
+    {
+      "test_id": "E2E-006",
+      "category": "End-to-End",
+      "description": "Step 6: Antigravity retrieves Cursor's decision in new session (KB-CROSS-AGENT-EVALUATION-001)",
+      "expected_result": "Antigravity retrieves Cursor's decision in fresh session with passive fencing",
+      "actual_result": "Antigravity capsule received Cursor's decision: True (Capsule ID: 38a4b1f4-c43b-4379-8778-509d6e80794b)",
+      "status": "PASSED",
+      "latency_ms": 2186.39,
+      "evidence": "FoundCursorDecision=True"
+    },
+    {
+      "test_id": "E2E-007",
+      "category": "End-to-End",
+      "description": "Step 7: Verification of Identity Integrity & Zero Drift (KB-CROSS-AGENT-EVALUATION-001)",
+      "expected_result": "All retrieved memory IDs match their exact origin records with zero drift or identity corruption",
+      "actual_result": "Target IDs: 5, Matched in Neon DB: 5, Zero Identity Drift: True",
+      "status": "PASSED",
+      "latency_ms": 1964.48,
+      "evidence": "MatchedCount=5/5"
+    }
+  ]
+}

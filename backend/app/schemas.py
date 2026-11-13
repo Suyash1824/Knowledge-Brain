@@ -13,7 +13,7 @@ from datetime import datetime
 # ==========================================
 
 MemoryType = Literal["fact", "preference", "decision", "task", "experience"]
-MemoryStatus = Literal["trusted", "provisional", "quarantined", "revoked"]
+MemoryStatus = Literal["trusted", "provisional", "quarantined", "revoked", "active"]
 RelationshipType = Literal["depends_on", "contradicts", "updates", "derives_from"]
 
 class MemoryCompileInput(BaseModel):

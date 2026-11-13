@@ -1,4 +1,4 @@
-﻿# Knowledge Brain - Unified Full-Stack Application Launcher
+# Knowledge Brain - Unified Full-Stack Application Launcher
 # Starts both Backend (Port 8000) and Frontend (Port 3000) in concurrent processes
 
 $projectRoot = $PSScriptRoot

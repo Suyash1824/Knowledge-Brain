@@ -21,7 +21,7 @@ PATTERNS = {
         r"(?i)(?:\b(?:todo|task|action\s+item)\s*:|\b(?:need\s+to|must\s+implement|have\s+to|remember\s+to|plan\s+to|completed\s+auth|remaining\s+step\s+is|next\s+step\s+is|upcoming\s+milestone|deadline\s+is|assigned\s+to)\b).*?[.!?\n]",
     ],
     "experience": [
-        r"(?i)\b(?:learned\s+that|discovered\s+that|the\s+issue\s+was|the\s+bug\s+was\s+caused\s+by|solution\s+was|lesson\s+learned)\b.*?[.!?\n]",
+        r"(?i)(?:\b(?:experience|lesson\s+learned|finding)\s*:|\b(?:learned\s+that|discovered\s+that|the\s+issue\s+was|the\s+bug\s+was\s+caused\s+by|solution\s+was|lesson\s+learned)\b).*?[.!?\n]",
         r"(?i)\b(?:encountered\s+error|fixed\s+by|root\s+cause\s+was|turns\s+out\s+that)\b.*?[.!?\n]"
     ],
     "fact": [
