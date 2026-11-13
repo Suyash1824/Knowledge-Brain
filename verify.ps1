@@ -9,3 +9,4 @@ Write-Host " Executing Knowledge Brain E2E Integration Suite          " -Foregro
 Write-Host "==========================================================" -ForegroundColor Cyan
 
 & "$projectRoot\venv\Scripts\python.exe" "$projectRoot\scripts\verify_e2e_integration.py"
+

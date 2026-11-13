@@ -15,13 +15,14 @@ Write-Host "==========================================================" -Foregro
 
 # Launch backend process
 Write-Host "Launching backend process..." -ForegroundColor Yellow
-$backendJob = Start-Process powershell -ArgumentList "-NoExit", "-File `"$projectRoot\start-backend.ps1`"" -PassThru
+$backendJob = Start-Process powershell -ArgumentList "-ExecutionPolicy Bypass", "-NoExit", "-File `"$projectRoot\start-backend.ps1`"" -PassThru
 
 Start-Sleep -Seconds 2
 
 # Launch frontend process
 Write-Host "Launching frontend process..." -ForegroundColor Yellow
-$frontendJob = Start-Process powershell -ArgumentList "-NoExit", "-File `"$projectRoot\start-frontend.ps1`"" -PassThru
+$frontendJob = Start-Process powershell -ArgumentList "-ExecutionPolicy Bypass", "-NoExit", "-File `"$projectRoot\start-frontend.ps1`"" -PassThru
 
 Write-Host "`nBoth processes launched successfully!" -ForegroundColor Green
 Write-Host "To access the application, open your browser at: http://localhost:3000" -ForegroundColor Cyan
+
