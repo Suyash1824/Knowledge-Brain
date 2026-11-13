@@ -78,6 +78,7 @@ class Memory(Base):
     embedding = Column(Vector(1536), nullable=True) # pgvector column (OpenAI text-embedding-3-small standard)
     embedding_model = Column(String(64), default="text-embedding-3-small") # records embedding model version
     confidence_score = Column(Float, default=1.0)
+    importance_score = Column(Float, default=0.7) # Salience / priority rating (0.0 to 1.0)
     metadata_ = Column("metadata", MutableDict.as_mutable(JSONB), default=dict)
     status = Column(String(32), default="trusted", index=True) # trusted, provisional, quarantined, revoked
     valid_until = Column(DateTime(timezone=True), nullable=True) # temporal expiration if transient

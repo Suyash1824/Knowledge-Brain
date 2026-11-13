@@ -29,6 +29,7 @@ class ExtractedMemoryItem(BaseModel):
     content: str
     memory_type: MemoryType
     confidence_score: float = Field(default=1.0, ge=0.0, le=1.0)
+    importance_score: float = Field(default=0.7, ge=0.0, le=1.0)
     metadata: Dict[str, Any] = Field(default_factory=dict)
     valid_until: Optional[datetime] = None
     related_memory_ids: List[UUID] = Field(default_factory=list)
@@ -38,6 +39,7 @@ class MemoryCreate(BaseModel):
     conversation_id: UUID
     content: str
     memory_type: MemoryType = "fact"
+    importance_score: Optional[float] = Field(default=0.7, ge=0.0, le=1.0)
     metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
     valid_until: Optional[datetime] = None
     source_type: Optional[str] = "api"
@@ -50,6 +52,7 @@ class MemoryResponse(BaseModel):
     memory_type: MemoryType
     status: MemoryStatus
     confidence_score: float
+    importance_score: float = 0.7
     metadata: Dict[str, Any] = Field(alias="metadata_")
     valid_until: Optional[datetime]
     created_at: datetime
@@ -109,6 +112,7 @@ class CapsuleMemoryEntry(BaseModel):
     content: str
     memory_type: MemoryType
     relevance_score: float
+    importance_score: float = 0.7
     status: MemoryStatus
     provenance_summary: Optional[str] = None
 

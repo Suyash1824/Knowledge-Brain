@@ -35,3 +35,4 @@ for dirpath, dirnames, filenames in os.walk(root_dir):
 print(f"Total flagged items: {len(flagged)}")
 for f, m in flagged:
     print(f"  {f}: {m[:80]}")
+

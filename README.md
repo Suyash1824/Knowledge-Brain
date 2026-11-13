@@ -83,6 +83,17 @@ Comprehensive technical specifications and system designs are available in the [
    - **Interactive API Docs (Swagger UI):** `http://127.0.0.1:8000/docs`
    - **Alternative API Docs (ReDoc):** `http://127.0.0.1:8000/redoc`
 
+### Verification & Automated Testing
+
+Knowledge Brain includes automated verification suites for both architecture validation and core intelligence capabilities:
+```powershell
+# Run Phase 1 Foundation & Schema Verification
+.\venv\Scripts\python.exe scripts/verify_phase1.py
+
+# Run Phase 2 Core Intelligence Engine Verification (10/10 Objectives)
+.\venv\Scripts\python.exe scripts/test_phase2_suite.py
+```
+
 ### Frontend Setup & Execution
 
 1. Navigate to the frontend directory:
@@ -121,6 +132,8 @@ Knowledge-Brain/
 │   ├── tailwind.config.js
 │   └── vite.config.ts
 ├── scripts/                  # Automation & verification scripts
+│   ├── scan_secrets.py       # Secret scanning & pre-commit audit
+│   ├── test_phase2_suite.py  # Phase 2 Core Intelligence test suite (10/10)
 │   └── verify_phase1.py      # Automated Phase 1 test suite
 ├── .env.example              # Environment variable template
 ├── .gitignore                # Git ignore rules (secrets, venv, node_modules)
