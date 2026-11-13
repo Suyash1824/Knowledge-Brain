@@ -1,0 +1,44 @@
+Knowledge-Brain/
+├── backend/
+│   ├── app/
+│   │   ├── __init__.py
+│   │   ├── main.py
+│   │   ├── api.py
+│   │   ├── database.py
+│   │   ├── models.py
+│   │   ├── schemas.py
+│   │   ├── capsule/
+│   │   │   ├── __init__.py
+│   │   │   └── generator.py
+│   │   ├── compiler/
+│   │   │   ├── __init__.py
+│   │   │   ├── extractor.py
+│   │   │   └── sanitizer.py
+│   │   ├── conflict/
+│   │   │   ├── __init__.py
+│   │   │   └── detector.py
+│   │   ├── forgetting/
+│   │   │   ├── __init__.py
+│   │   │   └── engine.py
+│   │   └── services/
+│   │       ├── __init__.py
+│   │       └── memory_service.py
+│   └── requirements.txt
+├── frontend/
+│   ├── src/
+│   │   └── main.tsx
+│   ├── package.json
+│   ├── tailwind.config.js
+│   └── vite.config.ts
+├── scripts/
+│   ├── setup.ps1
+│   ├── start.ps1
+│   ├── verify_phase1.py
+│   └── test_phase2_suite.py
+├── venv/
+├── .env.example
+├── .gitignore
+├── DEVELOPMENT_STATUS.md
+├── README.md
+├── setup.ps1
+└── start.ps1
