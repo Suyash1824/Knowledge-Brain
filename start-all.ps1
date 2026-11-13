@@ -7,7 +7,7 @@ if (-not $projectRoot) {
 }
 
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host " KNOWLEDGE BRAIN — UNIFIED FULL-STACK LAUNCHER            " -ForegroundColor Cyan
+Write-Host " KNOWLEDGE BRAIN -- UNIFIED FULL-STACK LAUNCHER            " -ForegroundColor Cyan
 Write-Host " Backend:  http://127.0.0.1:8000 (FastAPI + Swagger Docs) " -ForegroundColor Cyan
 Write-Host " Frontend: http://localhost:3000 (React + 3D Core SPA)   " -ForegroundColor Cyan
 Write-Host " Database: Neon Cloud PostgreSQL (pgvector active)        " -ForegroundColor Cyan

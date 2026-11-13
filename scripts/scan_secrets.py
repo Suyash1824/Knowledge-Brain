@@ -9,7 +9,7 @@ SUSPICIOUS_PATTERNS = [
 ]
 
 ignored_dirs = {'.git', 'venv', '__pycache__', 'node_modules', '.pytest_cache'}
-root_dir = r'd:\5B assignments\CV\DevX'
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 flagged = []
 for dirpath, dirnames, filenames in os.walk(root_dir):
