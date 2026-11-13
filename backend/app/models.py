@@ -53,8 +53,8 @@ class User(Base):
     is_active = Column(Boolean, server_default=expression.true())
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
-    conversations = relationship("Conversation", back_populates="owner", cascade="all, delete-orphan")
-    deletion_requests = relationship("DeletionRequest", back_populates="requester")
+    conversations = relationship("Conversation", back_populates="owner", cascade="all, delete-orphan", passive_deletes=True)
+    deletion_requests = relationship("DeletionRequest", back_populates="requester", cascade="all, delete-orphan", passive_deletes=True)
 
 class Conversation(Base):
     __tablename__ = "conversations"
@@ -157,7 +157,7 @@ class DeletionRequest(Base):
     completed_at = Column(DateTime(timezone=True), nullable=True)
     
     requester = relationship("User", back_populates="deletion_requests")
-    verification_record = relationship("VerificationRecord", back_populates="deletion_request", uselist=False)
+    verification_record = relationship("VerificationRecord", back_populates="deletion_request", uselist=False, cascade="all, delete-orphan", passive_deletes=True)
 
 class VerificationRecord(Base):
     __tablename__ = "verification_records"

@@ -21,7 +21,8 @@ sys.path.insert(0, os.path.join(project_root, "backend"))
 from app.database import get_engine, check_db_health, sanitize_db_url
 from app.models import (
     Base, User, Conversation, Memory, MemoryVersion,
-    MemorySource, MemoryPermission, memory_dependencies, memory_semantic_links
+    MemorySource, MemoryPermission, DeletionRequest, VerificationRecord,
+    memory_dependencies, memory_semantic_links
 )
 from app.services.memory_service import MemoryService
 from app.forgetting.engine import ForgettingEngine
@@ -171,7 +172,9 @@ def verify_live_database():
         assert purged is None, "Target memory still exists in database after deletion!"
         print("  ✓ Target memory confirmed purged from live database.")
 
-        # Cleanup test user and conversation
+        # Cleanup test records
+        session.query(VerificationRecord).filter(VerificationRecord.memory_id == test_mem_id).delete()
+        session.query(DeletionRequest).filter(DeletionRequest.memory_id == test_mem_id).delete()
         session.delete(conv)
         session.delete(user)
         session.commit()

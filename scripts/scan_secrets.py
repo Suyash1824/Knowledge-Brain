@@ -15,8 +15,9 @@ flagged = []
 for dirpath, dirnames, filenames in os.walk(root_dir):
     dirnames[:] = [d for d in dirnames if d not in ignored_dirs]
     for fn in filenames:
-        if fn.endswith(('.pyc', '.ico', '.png', '.jpg')):
-            continue
+        if fn.endswith(('.pyc', '.ico', '.png', '.jpg')) or fn == '.env' or fn.startswith('.env.'):
+            if fn != '.env.example':
+                continue
         filepath = os.path.join(dirpath, fn)
         rel_path = os.path.relpath(filepath, root_dir)
         try:
