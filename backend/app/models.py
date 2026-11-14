@@ -85,6 +85,10 @@ class Memory(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
+    # Persistent Cross-Agent Writer Provenance
+    created_by_agent = Column(String(128), nullable=True, index=True)
+    last_modified_by_agent = Column(String(128), nullable=True, index=True)
+    
     # Hierarchical Progressive Memory Architecture
     # Level 1: Experience, Level 2: Context, Level 3: Knowledge
     hierarchy_level = Column(Integer, nullable=False, default=2, index=True)

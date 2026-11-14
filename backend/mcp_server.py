@@ -150,6 +150,9 @@ async def compile_memory(
             
         for item in extracted_items:
             item.metadata["classification_level"] = classification_level
+            item.metadata["created_by_agent"] = effective_agent
+            item.metadata["last_modified_by_agent"] = effective_agent
+            item.metadata["agent_id"] = effective_agent
             mem_dict = {
                 "content": MemorySanitizer.wrap_passive_data(item.content),
                 "memory_type": item.memory_type,
@@ -157,6 +160,8 @@ async def compile_memory(
                 "importance_score": item.importance_score,
                 "status": sec_status,
                 "valid_until": item.valid_until.isoformat() if item.valid_until else None,
+                "created_by_agent": effective_agent,
+                "last_modified_by_agent": effective_agent,
                 "metadata": item.metadata
             }
             
@@ -242,16 +247,24 @@ async def retrieve_memories(
         
         output = []
         for m in db_memories:
+            creator = getattr(m, "created_by_agent", None) or (m.metadata_ or {}).get("created_by_agent") or (m.metadata_ or {}).get("agent_id") or "unknown"
+            last_mod = getattr(m, "last_modified_by_agent", None) or (m.metadata_ or {}).get("last_modified_by_agent") or getattr(m, "promoted_by", None) or creator
             output.append({
                 "id": str(m.id),
                 "conversation_id": str(m.conversation_id),
+                "originating_conversation_id": str(m.conversation_id),
                 "content": MemorySanitizer.wrap_passive_data(m.content),
                 "memory_type": m.memory_type,
                 "importance_score": getattr(m, "importance_score", 0.7) or 0.7,
                 "confidence_score": m.confidence_score,
                 "status": m.status,
+                "created_by_agent": creator,
+                "requesting_agent": effective_agent,
+                "last_modified_by_agent": last_mod,
                 "created_at": m.created_at.isoformat() if m.created_at else None,
-                "updated_at": m.updated_at.isoformat() if m.updated_at else None
+                "updated_at": m.updated_at.isoformat() if m.updated_at else None,
+                "hierarchy_level": getattr(m, "hierarchy_level", 2),
+                "promoted_by": getattr(m, "promoted_by", None)
             })
             
         return json.dumps({
@@ -413,7 +426,11 @@ async def update_memory(
         # Update active row
         mem.content = sanitized_content
         mem.embedding = get_embedding(sanitized_content)
+        mem.last_modified_by_agent = effective_agent
         mem.updated_at = now
+        if mem.metadata_ is None:
+            mem.metadata_ = {}
+        mem.metadata_["last_modified_by_agent"] = effective_agent
         
         # Record semantic link if not already recorded
         link_exists = db.query(memory_semantic_links).filter(
@@ -431,11 +448,14 @@ async def update_memory(
         db.commit()
         db.refresh(mem)
         
+        creator = getattr(mem, "created_by_agent", None) or (mem.metadata_ or {}).get("created_by_agent") or (mem.metadata_ or {}).get("agent_id") or "unknown"
         return json.dumps({
             "status": "success",
             "memory_id": str(mem.id),
             "new_version": current_v + 1,
             "change_reason": change_reason,
+            "created_by_agent": creator,
+            "last_modified_by_agent": effective_agent,
             "updated_content": MemorySanitizer.wrap_passive_data(mem.content),
             "updated_at": mem.updated_at.isoformat()
         }, indent=2)
@@ -620,12 +640,15 @@ async def promote_memory(
         else:
             return json.dumps({"error": "Invalid target_level. Must be 2 or 3."})
 
+        creator = getattr(res, "created_by_agent", None) or (res.metadata_ or {}).get("created_by_agent") or "unknown"
         return json.dumps({
             "memory_id": str(res.id),
             "hierarchy_level": res.hierarchy_level,
             "promotion_status": res.promotion_status,
             "content": res.content,
-            "promoted_by": res.promoted_by
+            "created_by_agent": creator,
+            "promoted_by": res.promoted_by,
+            "last_modified_by_agent": res.last_modified_by_agent or res.promoted_by
         }, indent=2)
     except Exception as e:
         return json.dumps({"error": str(e)})

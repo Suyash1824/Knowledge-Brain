@@ -23,6 +23,7 @@ class MemoryCompileInput(BaseModel):
     source_type: str = Field(default="conversation_turn", description="Origin: conversation_turn, api, tool, user")
     raw_content: str = Field(..., description="Raw text or conversation stream to extract memories from")
     context_metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    persist: bool = Field(default=True, description="Whether to persist extracted memories to database")
 
 class ExtractedMemoryItem(BaseModel):
     """Single memory item extracted by the Memory Compiler."""
@@ -66,6 +67,11 @@ class MemoryResponse(BaseModel):
     promoted_by: Optional[str] = None
     parent_context_id: Optional[UUID] = None
     superseded_by_id: Optional[UUID] = None
+    # Persistent Cross-Agent Writer Provenance
+    created_by_agent: Optional[str] = "unknown"
+    last_modified_by_agent: Optional[str] = None
+    requesting_agent: Optional[str] = None
+    originating_conversation_id: Optional[UUID] = None
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
@@ -226,6 +232,8 @@ class MemorySearchResultItem(BaseModel):
     status: MemoryStatus
     created_at: datetime
     updated_at: datetime
+    created_by_agent: Optional[str] = "unknown"
+    last_modified_by_agent: Optional[str] = None
 
 class MemorySearchResponse(BaseModel):
     total: int

@@ -36,6 +36,10 @@ class MemoryService:
         
         mem_id = uuid4()
         metadata = dict(mem_data.metadata or {})
+        # Enforce agent writer provenance (cannot be spoofed by user payload)
+        metadata["created_by_agent"] = agent_id
+        metadata["last_modified_by_agent"] = agent_id
+        metadata["agent_id"] = agent_id
         metadata["security_audit"] = audit
         importance = getattr(mem_data, "importance_score", 0.7) or 0.7
         
@@ -91,7 +95,11 @@ class MemoryService:
                     conflicting_mem.content = sanitized_content
                     conflicting_mem.embedding = get_embedding(sanitized_content)
                     conflicting_mem.importance_score = max(conflicting_mem.importance_score or 0.7, importance)
+                    conflicting_mem.last_modified_by_agent = agent_id
                     conflicting_mem.updated_at = now
+                    if conflicting_mem.metadata_ is None:
+                        conflicting_mem.metadata_ = {}
+                    conflicting_mem.metadata_["last_modified_by_agent"] = agent_id
                     
                     # Record semantic update link if not already present
                     link_exists = db.query(memory_semantic_links).filter(
@@ -112,6 +120,7 @@ class MemoryService:
                     return MemoryResponse(
                         id=conflicting_mem.id,
                         conversation_id=conflicting_mem.conversation_id,
+                        originating_conversation_id=conflicting_mem.conversation_id,
                         content=conflicting_mem.content,
                         memory_type=conflicting_mem.memory_type,
                         status=conflicting_mem.status,
@@ -120,7 +129,10 @@ class MemoryService:
                         metadata_=conflicting_mem.metadata_ or {},
                         valid_until=conflicting_mem.valid_until,
                         created_at=conflicting_mem.created_at,
-                        updated_at=conflicting_mem.updated_at
+                        updated_at=conflicting_mem.updated_at,
+                        created_by_agent=conflicting_mem.created_by_agent or (conflicting_mem.metadata_ or {}).get("created_by_agent") or "unknown",
+                        last_modified_by_agent=conflicting_mem.last_modified_by_agent or agent_id,
+                        requesting_agent=agent_id
                     )
                 
                 elif conflict_report.recommended_action == "quarantine_new":
@@ -144,7 +156,9 @@ class MemoryService:
                 status=sec_status,
                 valid_until=mem_data.valid_until,
                 created_at=now,
-                updated_at=now
+                updated_at=now,
+                created_by_agent=agent_id,
+                last_modified_by_agent=agent_id
             )
             db.add(db_mem)
             db.flush()
@@ -210,6 +224,7 @@ class MemoryService:
             return MemoryResponse(
                 id=db_mem.id,
                 conversation_id=db_mem.conversation_id,
+                originating_conversation_id=db_mem.conversation_id,
                 content=db_mem.content,
                 memory_type=db_mem.memory_type,
                 status=db_mem.status,
@@ -218,13 +233,17 @@ class MemoryService:
                 metadata_=db_mem.metadata_ or {},
                 valid_until=db_mem.valid_until,
                 created_at=db_mem.created_at,
-                updated_at=db_mem.updated_at
+                updated_at=db_mem.updated_at,
+                created_by_agent=db_mem.created_by_agent or agent_id,
+                last_modified_by_agent=db_mem.last_modified_by_agent or agent_id,
+                requesting_agent=agent_id
             )
 
         # Standalone object when DB is unpersisted (e.g. schema testing)
         return MemoryResponse(
             id=mem_id,
             conversation_id=mem_data.conversation_id,
+            originating_conversation_id=mem_data.conversation_id,
             content=sanitized_content,
             memory_type=mem_data.memory_type,
             status=sec_status,
@@ -233,7 +252,10 @@ class MemoryService:
             metadata_=metadata,
             valid_until=mem_data.valid_until,
             created_at=now,
-            updated_at=now
+            updated_at=now,
+            created_by_agent=agent_id,
+            last_modified_by_agent=agent_id,
+            requesting_agent=agent_id
         )
 
     @classmethod

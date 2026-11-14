@@ -1,12 +1,12 @@
 {
   "mcpServers": {
     "knowledge-brain": {
-      "command": "d:\\5B assignments\\CV\\DevX\\venv\\Scripts\\python.exe",
+      "command": "d:\\5B assignments\\CV\\Knowledge-Brain\\venv\\Scripts\\python.exe",
       "args": [
-        "d:\\5B assignments\\CV\\DevX\\backend\\mcp_server.py"
+        "d:\\5B assignments\\CV\\Knowledge-Brain\\backend\\mcp_server.py"
       ],
       "env": {
-        "PYTHONPATH": "d:\\5B assignments\\CV\\DevX\\backend",
+        "PYTHONPATH": "d:\\5B assignments\\CV\\Knowledge-Brain\\backend",
         "KB_AGENT_ID": "antigravity-ai"
       }
     }

@@ -227,6 +227,8 @@ class HierarchicalMemoryService:
             quality_score=0.75,
             promoted_at=now,
             promoted_by=agent_id,
+            created_by_agent=getattr(exp_mem, "created_by_agent", None) or agent_id,
+            last_modified_by_agent=agent_id,
             created_at=now,
             updated_at=now
         )
@@ -341,6 +343,10 @@ class HierarchicalMemoryService:
         ctx_mem.confidence_score = min(1.0, ctx_mem.confidence_score + 0.1)
         ctx_mem.promoted_at = now
         ctx_mem.promoted_by = promoted_by
+        ctx_mem.last_modified_by_agent = promoted_by
+        if ctx_mem.metadata_ is None:
+            ctx_mem.metadata_ = {}
+        ctx_mem.metadata_["last_modified_by_agent"] = promoted_by
         ctx_mem.valid_until = None # Knowledge memories are durable by default
         ctx_mem.updated_at = now
         

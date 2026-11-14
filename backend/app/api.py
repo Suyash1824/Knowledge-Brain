@@ -314,6 +314,7 @@ async def list_memories(
         MemoryResponse(
             id=m.id,
             conversation_id=m.conversation_id,
+            originating_conversation_id=m.conversation_id,
             content=m.content,
             memory_type=m.memory_type,
             status=m.status,
@@ -322,7 +323,9 @@ async def list_memories(
             metadata_=m.metadata_ or {},
             valid_until=m.valid_until,
             created_at=m.created_at,
-            updated_at=m.updated_at
+            updated_at=m.updated_at,
+            created_by_agent=getattr(m, "created_by_agent", None) or (m.metadata_ or {}).get("created_by_agent") or "unknown",
+            last_modified_by_agent=getattr(m, "last_modified_by_agent", None) or (m.metadata_ or {}).get("last_modified_by_agent") or getattr(m, "created_by_agent", None) or "unknown"
         )
         for m in memories
     ]
@@ -337,6 +340,7 @@ async def get_memory(memory_id: UUID, db: Session = Depends(require_db)):
     return MemoryResponse(
         id=m.id,
         conversation_id=m.conversation_id,
+        originating_conversation_id=m.conversation_id,
         content=m.content,
         memory_type=m.memory_type,
         status=m.status,
@@ -345,7 +349,9 @@ async def get_memory(memory_id: UUID, db: Session = Depends(require_db)):
         metadata_=m.metadata_ or {},
         valid_until=m.valid_until,
         created_at=m.created_at,
-        updated_at=m.updated_at
+        updated_at=m.updated_at,
+        created_by_agent=getattr(m, "created_by_agent", None) or (m.metadata_ or {}).get("created_by_agent") or "unknown",
+        last_modified_by_agent=getattr(m, "last_modified_by_agent", None) or (m.metadata_ or {}).get("last_modified_by_agent") or getattr(m, "created_by_agent", None) or "unknown"
     )
 
 
@@ -391,11 +397,16 @@ async def update_memory(
     db.add(v_next)
 
     # Update active row
+    updating_agent = payload.agent_id or "default_agent"
     mem.content = sanitized_content
     mem.embedding = get_embedding(sanitized_content)
     if payload.importance_score is not None:
         mem.importance_score = payload.importance_score
+    mem.last_modified_by_agent = updating_agent
     mem.updated_at = now
+    if mem.metadata_ is None:
+        mem.metadata_ = {}
+    mem.metadata_["last_modified_by_agent"] = updating_agent
 
     # Record semantic link
     link_exists = db.query(memory_semantic_links).filter(
@@ -417,6 +428,7 @@ async def update_memory(
     return MemoryResponse(
         id=mem.id,
         conversation_id=mem.conversation_id,
+        originating_conversation_id=mem.conversation_id,
         content=mem.content,
         memory_type=mem.memory_type,
         status=mem.status,
@@ -425,7 +437,10 @@ async def update_memory(
         metadata_=mem.metadata_ or {},
         valid_until=mem.valid_until,
         created_at=mem.created_at,
-        updated_at=mem.updated_at
+        updated_at=mem.updated_at,
+        created_by_agent=getattr(mem, "created_by_agent", None) or (mem.metadata_ or {}).get("created_by_agent") or "unknown",
+        last_modified_by_agent=updating_agent,
+        requesting_agent=updating_agent
     )
 
 
@@ -470,7 +485,7 @@ async def search_memories(
     # Try pgvector query
     sql = text("""
         SELECT id, conversation_id, content, memory_type, status, importance_score,
-               created_at, updated_at,
+               created_at, updated_at, created_by_agent, last_modified_by_agent,
                1.0 - (embedding <=> CAST(:emb AS vector)) AS similarity
         FROM memories
         WHERE status IN ('trusted', 'provisional')
@@ -494,7 +509,9 @@ async def search_memories(
                     importance_score=r.importance_score or 0.7,
                     status=r.status,
                     created_at=r.created_at,
-                    updated_at=r.updated_at
+                    updated_at=r.updated_at,
+                    created_by_agent=getattr(r, "created_by_agent", None) or "unknown",
+                    last_modified_by_agent=getattr(r, "last_modified_by_agent", None) or getattr(r, "created_by_agent", None) or "unknown"
                 ))
         return MemorySearchResponse(total=len(results), query=payload.query, results=results)
     except Exception:
@@ -522,7 +539,9 @@ async def search_memories(
                     importance_score=getattr(m, "importance_score", 0.7) or 0.7,
                     status=m.status,
                     created_at=m.created_at,
-                    updated_at=m.updated_at
+                    updated_at=m.updated_at,
+                    created_by_agent=getattr(m, "created_by_agent", None) or (m.metadata_ or {}).get("created_by_agent") or "unknown",
+                    last_modified_by_agent=getattr(m, "last_modified_by_agent", None) or (m.metadata_ or {}).get("last_modified_by_agent") or getattr(m, "created_by_agent", None) or "unknown"
                 ))
         results.sort(key=lambda x: x.similarity_score, reverse=True)
         return MemorySearchResponse(total=len(results[:payload.limit]), query=payload.query, results=results[:payload.limit])

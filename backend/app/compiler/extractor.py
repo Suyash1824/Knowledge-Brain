@@ -130,9 +130,12 @@ class MemoryExtractor:
                             )
                         )
         
-        # 2. Fallback: If no facet matched but text has declarative substance, extract as facts
-        if not extracted and len(text.strip()) > 15:
-            sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if len(s.strip()) > 15]
+        # 2. Fallback: If no facet matched but text has substance, extract as facts
+        if not extracted and text.strip():
+            raw_s = text.strip()
+            sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
+            if not sentences:
+                sentences = [raw_s]
             for s in sentences[:3]:
                 importance = self.calculate_importance(s, "fact")
                 valid_until = self.extract_temporal_validity(s)

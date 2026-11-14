@@ -116,6 +116,7 @@ class MemoryCapsuleGenerator:
                     3
                 )
                 
+                creator = getattr(m, "created_by_agent", None) or (m.metadata_ or {}).get("created_by_agent") or "unknown"
                 candidates.append({
                     "id": m.id,
                     "content": m.content,
@@ -124,7 +125,8 @@ class MemoryCapsuleGenerator:
                     "importance_score": round(importance, 2),
                     "composite_score": composite_score,
                     "status": m.status,
-                    "created_at": m.created_at
+                    "created_at": m.created_at,
+                    "created_by_agent": creator
                 })
         else:
             # Standalone demonstration candidate matching task directive
@@ -161,7 +163,8 @@ class MemoryCapsuleGenerator:
                 
             prov_text = None
             if request.include_provenance:
-                prov_text = f"Origin: Knowledge Brain [facet={cand['memory_type']}, status={cand['status']}, salience={cand['importance_score']}]"
+                author_str = cand.get("created_by_agent", "unknown")
+                prov_text = f"Origin: Knowledge Brain [facet={cand['memory_type']}, author={author_str}, status={cand['status']}, salience={cand['importance_score']}]"
                 
             selected_entries.append(
                 CapsuleMemoryEntry(
